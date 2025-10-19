@@ -480,8 +480,8 @@ theorem deriv_u_t {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
     rw [tendstoLocallyUniformlyOn_iff_forall_isCompact (isOpen_Ioi (a := 0))]
     intro K hK hCK
     obtain ⟨a, ha⟩ := lowerboundK hK hCK
-    let u : ℕ → ℝ := fun n => (n.factorial : ℝ)⁻¹ * (1 / (θ α * a) * |x|^2) ^ n / (θ α * a)
-    refine tendstoUniformlyOn_tsum (u := u) (s := K) ?_ ?_
+    let v : ℕ → ℝ := fun n => (n.factorial : ℝ)⁻¹ * (1 / (θ α * a) * |x|^2) ^ n / (θ α * a)
+    refine tendstoUniformlyOn_tsum (u := v) (s := K) ?_ ?_
     · have h_summable : Summable (fun n : ℕ => (1 / (θ α * a) * |x|^2)^n / (n.factorial: ℝ)) := by
         exact Real.summable_pow_div_factorial _;
       convert h_summable.div_const (θ α * a) using 2 ; ring!
@@ -527,7 +527,7 @@ theorem deriv_u_t {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
             · exact ha.2 z hz
             · exact le_of_lt (θpos hα)
             · exact ha.2 z hz
-          _ ≤ u n := by simp [u]
+          _ ≤ v n := by simp [v]
       · exact hK hz
   · intro n r hr
     simp [mul_assoc]
@@ -582,25 +582,25 @@ theorem deriv2_u_x {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
     iteratedDeriv 2 (fun x ↦ u α x t) x =
     ∑' (i : ℕ), iteratedDeriv (i + 1) (g α) t * ((2 * i).factorial : ℝ)⁻¹ * x ^ (2 * i) := by
   unfold u
+  have eq : ∀ i : ℕ, iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹ *
+    (2 * (i + 1) * ((2 * (i + 1) - 1) * x ^ (2 * (i + 1) - 1 - 1))) =
+    iteratedDeriv (i + 1) (g α) t * (↑(2 * i).factorial)⁻¹ * x ^ (2 * i) := by
+    intro i
+    calc
+      iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹ *
+        (2 * (i + 1) * ((2 * (i + 1) - 1) * x ^ (2 * (i + 1) - 1 - 1)))
+        = iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹ *
+        (2 * (i + 1) * ((2 * i + 1) * x ^ (2 * i))) := by
+          simp; apply Or.inl; apply Or.inl; grind
+      _ = iteratedDeriv (i + 1) (g α) t * ((↑(2 * (i + 1)).factorial)⁻¹ *
+        (2 * (i + 1)) * (2 * i + 1)) * x ^ (2 * i) := by ring
+      _ = iteratedDeriv (i + 1) (g α) t * (↑(2 * i).factorial)⁻¹ * x ^ (2 * i) := by
+          congr; field_simp; norm_cast
+          rw [mul_assoc, ← Nat.factorial_succ]
+          have : 2 * (i + 1) = (2 * i + 1) + 1 := by omega
+          simp [this, ← Nat.factorial_succ]
   rw [← iteratedDerivWithin_of_isOpen isOpen_univ, iteratedDerivWithin_tsum 2 isOpen_univ]
   · simp [iteratedDerivWithin_univ, iteratedDeriv_eq_iterate (n := 2)]
-    have eq : ∀ i : ℕ, iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹ *
-      (2 * (i + 1) * ((2 * (i + 1) - 1) * x ^ (2 * (i + 1) - 1 - 1))) =
-      iteratedDeriv (i + 1) (g α) t * (↑(2 * i).factorial)⁻¹ * x ^ (2 * i) := by
-      intro i
-      calc
-        iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹ *
-          (2 * (i + 1) * ((2 * (i + 1) - 1) * x ^ (2 * (i + 1) - 1 - 1)))
-          = iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹ *
-          (2 * (i + 1) * ((2 * i + 1) * x ^ (2 * i))) := by
-            simp; apply Or.inl; apply Or.inl; grind
-        _ = iteratedDeriv (i + 1) (g α) t * ((↑(2 * (i + 1)).factorial)⁻¹ *
-          (2 * (i + 1)) * (2 * i + 1)) * x ^ (2 * i) := by ring
-        _ = iteratedDeriv (i + 1) (g α) t * (↑(2 * i).factorial)⁻¹ * x ^ (2 * i) := by
-            congr; field_simp; norm_cast
-            rw [mul_assoc, ← Nat.factorial_succ]
-            have : 2 * (i + 1) = (2 * i + 1) + 1 := by omega
-            simp [this, ← Nat.factorial_succ]
     rw [← Summable.sum_add_tsum_nat_add' (k := 1)]
     · simp; congr; ext i; exact eq i
     · simp [summable_congr eq (L := SummationFilter.unconditional ℕ)]
@@ -626,7 +626,9 @@ theorem deriv2_u_x {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
         refine tendstoUniformlyOn_tsum (u := v) ?_ ?_
         · exact dom_seq' a t α
         · sorry
-      · sorry
+      · intro I; simp [Set.EqOn]; intro r; congr; ext n
+        simp? [iteratedDeriv_eq_iterate]
+        sorry
   · intro n k r hk hr
     rw [iteratedDerivWithin_univ]
     fun_prop
