@@ -62,7 +62,19 @@ lemma θpos {α : ℝ} (hα : 1 < α) : 0 < θ α := by
   · exact lem0
   · simp [inv_pos]; linarith
 
-lemma compare {α : ℝ} (hα : 1 < α) : θ α * (1 - θ α)⁻¹ < Real.sin (1 / α) := by sorry
+lemma lowcos {x : ℝ} (hx : |x| ≤ 1) : 1 - x ^ 2 / 2 + x ^ 4 / 4 - x ^ 6 / 6 ≤ Real.cos x := by sorry
+
+lemma cosup {x : ℝ} (hx : |x| ≤ 1) : Real.cos x ≤ 1 - x ^ 2 / 2 + x ^ 4 / 4 := by sorry
+
+lemma compare {α : ℝ} (hα : 1 < α) : θ α * (1 - θ α)⁻¹ ≤ Real.sin (1 / α) := by
+  rw [θ, tsub_tsub_eq_add_tsub_of_le, one_add_one_eq_two]
+  · suffices ∀ t ∈ Set.Ioo 0 1, ((2 * Real.cos 1) ^ t - 1) *
+      (2 - (2 * Real.cos 1) ^ t)⁻¹ ≤ Real.sin t by
+      sorry
+    intro t ht
+    sorry
+  · sorry
+/-- https://chatgpt.com/c/68f71f31-fed0-832f-935e-e7098e8d219c -/
 
 lemma cos1upperbound {α : ℝ} (hα : 1 < α) : 0 ≤ (2 * Real.cos 1) ^ (1 / α) := by
   have : 0 < 1 / α := by simp [inv_pos]; linarith
@@ -149,7 +161,7 @@ lemma re_ge_half {α : ℝ} (hα : 1 < α) : ∀ ψ : ℝ,
         imp_self, implies_true, abs_of_odd_function Real.arcsin_neg,
         abs_of_pos (by linarith : 0 < α)]
       rw [← le_div_iff₀ (by linarith), Real.arcsin_le_iff_le_sin']
-      refine LE.le.trans ?_ (le_of_lt (compare hα))
+      refine LE.le.trans ?_ (compare hα)
       · rw [mul_div_assoc, abs_mul, abs_of_pos (θpos hα)]
         refine (mul_le_mul_iff_of_pos_left (θpos hα)).2 ?_
         rw [abs_div, div_le_iff₀]
@@ -497,8 +509,8 @@ theorem deriv_u_t {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
     let v : ℕ → ℝ := fun n => (n.factorial : ℝ)⁻¹ * (1 / (θ α * a) * |x|^2) ^ n / (θ α * a)
     refine tendstoUniformlyOn_tsum (u := v) (s := K) ?_ ?_
     · have h_summable : Summable (fun n : ℕ => (1 / (θ α * a) * |x|^2)^n / (n.factorial: ℝ)) := by
-        exact Real.summable_pow_div_factorial _;
-      convert h_summable.div_const (θ α * a) using 2 ; ring!
+        exact Real.summable_pow_div_factorial _
+      convert h_summable.div_const (θ α * a) using 2; ring!
     · intro n z hz
       rw [derivWithin_of_isOpen (isOpen_Ioi (a := 0))]
       · simp only [deriv_mul_const_field', ← iteratedDeriv_succ, norm_mul, Real.norm_eq_abs,
@@ -562,7 +574,7 @@ lemma dom_seq' (x t α : ℝ) : (Summable fun (i : ℕ) =>
     convert h_factor.mul_left ( Real.exp ( -t ^ ( -α ) / 2 ) ) using 2 ; ring
   have h_exp_series : Summable (fun i : ℕ => (|x|^2 / (θ α * t)) ^ i / (Nat.factorial i : ℝ)) := by
     exact Real.summable_pow_div_factorial _
-  convert h_exp_series.mul_left ((θ α * t)⁻¹) using 2 ; norm_cast; norm_num; ring_nf
+  convert h_exp_series.mul_left ((θ α * t)⁻¹) using 2; norm_cast; norm_num; ring_nf
   norm_num [pow_mul']
 
 /-- The infinite series obtained by termwise differentiating `u` is pointwise summable. -/
@@ -793,19 +805,34 @@ theorem isClassical1DHeatSolution_u {α : ℝ} (hα : 1 < α) :
         deriv (fun t => iteratedDeriv i (g α) t) t * (↑(2 * i).factorial)⁻¹ * x ^ (2 * i)
       apply HasDerivAt.differentiableAt (f' := ∑' (i : ℕ), g' i t)
       simp only [u]
-      let v : ℕ → ℝ := sorry
-      have hv : Summable v := sorry
-      let s : Set ℝ := sorry
-      have hs : IsOpen s := sorry
-      have h's : IsPreconnected s := sorry
-      have ht : t ∈ s := sorry
+      let v : ℕ → ℝ := fun n => (n.factorial : ℝ)⁻¹ * (1 / (θ α * (t / 2)) * |x|^2) ^ n
+        / (θ α * (t / 2))
+      have hv : Summable v := by
+        have h_summable : Summable (fun n : ℕ => (1 / (θ α * (t / 2)) * |x|^2)^n /
+          (n.factorial: ℝ)) := by exact Real.summable_pow_div_factorial _
+        convert h_summable.div_const (θ α * (t / 2)) using 2; ring!
+      let s : Set ℝ := Set.Ioi (t / 2)
+      have hs : IsOpen s := isOpen_Ioi
+      have h's : IsPreconnected s := isPreconnected_Ioi
+      have h't : t ∈ s := by
+        suffices t / 2 < t by simp [s, Set.mem_Ioi, this]
+        linarith
       refine hasDerivAt_tsum_of_isPreconnected
         (g := fun (i : ℕ) (t : ℝ) => iteratedDeriv i (g α) t * (↑(2 * i).factorial)⁻¹ * x ^ (2 * i))
-        (g' := g') (𝕜 := ℝ) (F := ℝ) hv hs h's ?_ ?_ ht ?_ ht
+        (g' := g') (𝕜 := ℝ) (F := ℝ) hv hs h's ?_ ?_ h't ?_ h't
       · intro n y hy; simp only [g']
-        sorry
+        simp only [mul_assoc, ← mul_comm (((2 * n).factorial : ℝ)⁻¹ * x ^ (2 * n))]
+        rw [← deriv_const_mul_field, ← deriv_const_mul_field, hasDerivAt_deriv_iff]
+        simp [← mul_assoc]
+        refine DifferentiableAt.const_mul ?_ (((2 * n).factorial : ℝ)⁻¹ * x ^ (2 * n))
+        refine DifferentiableOn.differentiableAt (s := Set.Ioi 0) ?_ ?_
+        · exact (iteratedDeriv_restrict_eq n (cgDiff α) (cg_eq_g α)).2
+        · refine IsOpen.mem_nhds isOpen_Ioi ?_
+          suffices s ⊆ Set.Ioi 0 from this hy
+          simp only [Set.Ioi_subset_Ioi_iff, s]
+          linarith
       · sorry
-      · sorry
+      · exact summable_u x ht hα
     · exact isOpen_Ioi
     · simp [ht]
   · constructor
