@@ -19,8 +19,8 @@ Reference: Fritz John PDE.
 -/
 
 noncomputable section
-open InnerProductSpace Metric Complex ContDiff
-open scoped Real NNReal
+open InnerProductSpace Metric Complex ContDiff Filter
+open scoped Real NNReal Nat
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
 
@@ -62,20 +62,6 @@ lemma θpos {α : ℝ} (hα : 1 < α) : 0 < θ α := by
   · exact lem0
   · simp [inv_pos]; linarith
 
-lemma lowcos {x : ℝ} (hx : |x| ≤ 1) : 1 - x ^ 2 / 2 + x ^ 4 / 4 - x ^ 6 / 6 ≤ Real.cos x := by sorry
-
-lemma cosup {x : ℝ} (hx : |x| ≤ 1) : Real.cos x ≤ 1 - x ^ 2 / 2 + x ^ 4 / 4 := by sorry
-
-lemma compare {α : ℝ} (hα : 1 < α) : θ α * (1 - θ α)⁻¹ ≤ Real.sin (1 / α) := by
-  rw [θ, tsub_tsub_eq_add_tsub_of_le, one_add_one_eq_two]
-  · suffices ∀ t ∈ Set.Ioo 0 1, ((2 * Real.cos 1) ^ t - 1) *
-      (2 - (2 * Real.cos 1) ^ t)⁻¹ ≤ Real.sin t by
-      sorry
-    intro t ht
-    sorry
-  · sorry
-/-- https://chatgpt.com/c/68f71f31-fed0-832f-935e-e7098e8d219c -/
-
 lemma cos1upperbound {α : ℝ} (hα : 1 < α) : 0 ≤ (2 * Real.cos 1) ^ (1 / α) := by
   have : 0 < 1 / α := by simp [inv_pos]; linarith
   rw [← Real.zero_rpow (x := 1 / α), Real.rpow_le_rpow_iff]
@@ -86,23 +72,180 @@ lemma cos1upperbound {α : ℝ} (hα : 1 < α) : 0 ≤ (2 * Real.cos 1) ^ (1 / �
   · linarith
 
 lemma θle1 {α : ℝ} (hα : 1 < α) : θ α < 1 := by
-    unfold θ
-    rw [tsub_lt_iff_left, one_add_one_eq_two,
-      ← Real.rpow_lt_rpow_iff (x := (2 * Real.cos 1) ^ (1 / α)) (y := 2) (z := α)]
+  unfold θ
+  rw [tsub_lt_iff_left, one_add_one_eq_two,
+    ← Real.rpow_lt_rpow_iff (x := (2 * Real.cos 1) ^ (1 / α)) (y := 2) (z := α)]
+  all_goals try linarith [cos1upperbound hα]
+  · rw [← Real.rpow_mul, ← mul_comm α, mul_one_div_cancel, Real.rpow_one]
+    · have : 2 * Real.cos 1 < 2 := by
+        rw (config := {occs := .neg [1]}) [← mul_one 2]
+        rw [mul_lt_mul_iff_of_pos_left (by linarith)]
+        exact cos1lt1
+      exact LT.lt.trans this (Real.self_lt_rpow_of_one_lt (by linarith) hα)
+    · linarith
+    · exact lem0
+  · rw [← Real.rpow_le_rpow_iff (z := α), ← Real.rpow_mul, ← mul_comm α,
+      mul_one_div_cancel, Real.rpow_one, Real.one_rpow]
     all_goals try linarith [cos1upperbound hα]
-    · rw [← Real.rpow_mul, ← mul_comm α, mul_one_div_cancel, Real.rpow_one]
-      · have : 2 * Real.cos 1 < 2 := by
-          rw (config := {occs := .neg [1]}) [← mul_one 2]
-          rw [mul_lt_mul_iff_of_pos_left (by linarith)]
-          exact cos1lt1
-        exact LT.lt.trans this (Real.self_lt_rpow_of_one_lt (by linarith) hα)
-      · linarith
-      · exact lem0
-    · rw [← Real.rpow_le_rpow_iff (z := α), ← Real.rpow_mul, ← mul_comm α,
-        mul_one_div_cancel, Real.rpow_one, Real.one_rpow]
-      all_goals try linarith [cos1upperbound hα]
-      · exact (div_le_iff₀' (by linarith)).1 (le_of_lt (α := ℝ) (gt_iff_lt.1 cosonegehalf))
-      · exact lem0
+    · exact (div_le_iff₀' (by linarith)).1 (le_of_lt (α := ℝ) (gt_iff_lt.1 cosonegehalf))
+    · exact lem0
+
+/-- Upper and lower bounds of cos. -/
+theorem Real.sin_cos_bound_of_pos (x : ℝ) (hx : 0 < x) (n : ℕ) :
+    (∑ i ∈ .range (2 * n + 2), (-1) ^ i * x ^ (2 * i + 1) / (2 * i + 1)! < x.sin) ∧
+    (x.sin < ∑ i ∈ .range (2 * n + 1), (-1) ^ i * x ^ (2 * i + 1) / (2 * i + 1)!) ∧
+    (∑ i ∈ .range (2 * n + 2), (-1) ^ i * x ^ (2 * i) / (2 * i)! < x.cos) ∧
+    (x.cos < ∑ i ∈ .range (2 * n + 3), (-1) ^ i * x ^ (2 * i) / (2 * i)!) := by
+  have H₀ (x : ℝ) (n : ℕ) (k : ℕ → ℕ) :
+      HasDerivAt (fun x : ℝ ↦ ∑ i ∈ .range n, (-1) ^ i * x ^ (k i) / (k i)!)
+        (∑ i ∈ .range n, (-1) ^ i * k i * x ^ (k i - 1) / (k i)!) x := by
+    refine HasDerivAt.fun_sum fun i hi ↦ ?_
+    simpa only [mul_assoc] using ((hasDerivAt_pow (k i) x).const_mul _).div_const _
+  set cosSeries := fun (n : ℕ) (x : ℝ) ↦ ∑ i ∈ .range n, (-1) ^ i * x ^ (2 * i) / (2 * i)!
+  set sinSeries := fun (n : ℕ) (x : ℝ) ↦ ∑ i ∈ .range n, (-1) ^ i * x ^ (2 * i + 1) / (2 * i + 1)!
+  have Hcos₀ (n) : cosSeries (n + 1) 0 = 1 := by simp [cosSeries, Finset.sum_range_succ']
+  have Hsin₀ (n) : sinSeries n 0 = 0 := by simp [sinSeries]
+  have HsinDeriv (x : ℝ) (n : ℕ) : HasDerivAt (sin - sinSeries n) (cos x - cosSeries n x) x := by
+    convert (hasDerivAt_sin x).sub (H₀ _ _ _) using 1
+    simp (disch := positivity) [Nat.factorial_succ, field, mul_assoc,
+      mul_left_comm _ (2 * _ + 1 : ℝ), mul_div_mul_left]
+  have HcosDeriv (x : ℝ) (n : ℕ) :
+      HasDerivAt (cos - cosSeries (n + 1)) (-sin x + sinSeries n x) x := by
+    rw [← sub_neg_eq_add (-sin x)]
+    convert (hasDerivAt_cos x).sub (H₀ _ _ _) using 2
+    rw [Finset.sum_range_succ', ← Finset.sum_neg_distrib, eq_comm]
+    convert add_zero _ using 2
+    · simp
+    · simp [field, Nat.factorial_succ, mul_add_one]
+      ring
+  have Hstep_sin_cos (n : ℕ) (ih : ∀ x > 0, sin x < sinSeries n x) (x : ℝ) (hx : 0 < x) :
+      cosSeries (n + 1) x < cos x := by
+    suffices StrictMonoOn (cos - cosSeries (n + 1)) (.Ici 0) by
+      simpa [Hcos₀] using this Set.left_mem_Ici hx.le hx
+    apply strictMonoOn_of_deriv_pos
+    · apply convex_Ici
+    · simp only [cosSeries, Pi.sub_def]
+      fun_prop
+    · simpa [(HcosDeriv _ _).deriv] using ih
+  have Hstep_sin_cos' (n : ℕ) (ih : ∀ x > 0, sinSeries n x < sin x) (x : ℝ) (hx : 0 < x) :
+      cos x < cosSeries (n + 1) x := by
+    suffices StrictAntiOn (cos - cosSeries (n + 1)) (.Ici 0) by
+      simpa [Hcos₀] using this Set.left_mem_Ici hx.le hx
+    apply strictAntiOn_of_deriv_neg
+    · apply convex_Ici
+    · simp only [cosSeries, Pi.sub_def]
+      fun_prop
+    · simpa [(HcosDeriv _ _).deriv] using ih
+  have Hstep_cos_sin (n : ℕ) (ih : ∀ x > 0, cos x < cosSeries n x) (x : ℝ) (hx : 0 < x) :
+      sin x < sinSeries n x := by
+    suffices StrictAntiOn (sin - sinSeries n) (Set.Ici 0) by
+      simpa [Hsin₀] using this Set.left_mem_Ici hx.le hx
+    apply strictAntiOn_of_deriv_neg
+    · apply convex_Ici
+    · simp only [sinSeries, Pi.sub_def]
+      exact continuousOn_sin.sub <| continuousOn_finset_sum _ fun _ _ ↦ by fun_prop
+    · simpa [(HsinDeriv _ _).deriv] using ih
+  have Hstep_cos_sin' (n : ℕ) (ih : ∀ x > 0, cosSeries n x < cos x) (x : ℝ) (hx : 0 < x) :
+      sinSeries n x < sin x := by
+    suffices StrictMonoOn (sin - sinSeries n) (Set.Ici 0) by
+      simpa [Hsin₀] using this Set.left_mem_Ici hx.le hx
+    apply strictMonoOn_of_deriv_pos
+    · apply convex_Ici
+    · simp only [sinSeries, Pi.sub_def]
+      exact continuousOn_sin.sub <| continuousOn_finset_sum _ fun _ _ ↦ by fun_prop
+    · simpa [(HsinDeriv _ _).deriv] using ih
+  induction n generalizing x with
+  | zero =>
+    have Hsin_lt : ∀ x > 0, sin x < sinSeries 1 x := by
+      intro x hx
+      simpa [sinSeries] using sin_lt hx
+    have Hlt_cos : ∀ x > 0, cosSeries 2 x < cos x := Hstep_sin_cos 1 Hsin_lt
+    have Hlt_sin : ∀ x > 0, sinSeries 2 x < sin x := Hstep_cos_sin' 2 Hlt_cos
+    have Hcos_lt : ∀ x > 0, cos x < cosSeries 3 x := Hstep_sin_cos' 2 Hlt_sin
+    exact ⟨Hlt_sin _ hx, Hsin_lt _ hx, Hlt_cos _ hx, Hcos_lt _ hx⟩
+  | succ n ihn =>
+    have Hsin_lt : ∀ x > 0, sin x < sinSeries (2 * n + 3) x := Hstep_cos_sin _ fun x hx ↦
+      (ihn x hx).2.2.2
+    have Hlt_cos : ∀ x > 0, cosSeries (2 * n + 4) x < cos x := Hstep_sin_cos _ Hsin_lt
+    have Hlt_sin : ∀ x > 0, sinSeries (2 * n + 4) x < sin x := Hstep_cos_sin' _ Hlt_cos
+    have Hcos_lt : ∀ x > 0, cos x < cosSeries (2 * n + 5) x := Hstep_sin_cos' _ Hlt_sin
+    simp only [mul_add_one, add_assoc]
+    exact ⟨Hlt_sin _ hx, Hsin_lt _ hx, Hlt_cos _ hx, Hcos_lt _ hx⟩
+
+lemma compare {α : ℝ} (hα : 1 < α) : θ α * (1 - θ α)⁻¹ ≤ Real.sin (1 / α) := by
+  rw [θ, tsub_tsub_eq_add_tsub_of_le, one_add_one_eq_two]
+  · suffices h : ∀ t ∈ Set.Ioo 0 1, ((2 * Real.cos 1) ^ t - 1) *
+      (2 - (2 * Real.cos 1) ^ t)⁻¹ ≤ Real.sin t by
+      have : (1 / α) ∈ Set.Ioo 0 1 := by
+        constructor
+        · simp only [one_div, inv_pos]; linarith
+        · simpa using one_div_lt_one_div_of_lt zero_lt_one hα
+      exact h (1 / α) this
+    intro t ht
+    have ine1 : 0 < 1 + Real.sin t := by
+      refine lt_add_of_neg_add_lt_left ?_
+      simp only [add_zero, ← Real.sin_pi_div_two, ← Real.sin_sub_pi, half_sub]
+      refine Real.sin_lt_sin_of_lt_of_le_pi_div_two (by simp) ?_ ?_
+      · exact le_trans ht.2.le Real.one_le_pi_div_two
+      · refine lt_trans ?_ ht.1
+        · simp [Real.pi_pos]
+    have ine2 : 0 < (2 * Real.cos 1) ^ t := by
+      refine Real.rpow_pos_of_pos ?_ t
+      exact mul_pos (by linarith) Real.cos_one_pos
+    have ine3 : ∀ p ∈ Set.Icc 0 1, 0 < 1 + Real.sin p * 2 := by
+      intro p hp
+      suffices 0 ≤ Real.sin p by positivity
+      refine Real.sin_nonneg_of_nonneg_of_le_pi hp.1 ?_
+      exact LE.le.trans hp.2 onelepi
+    rw [← le_mul_inv_iff₀, inv_inv, mul_sub_left_distrib, sub_le_iff_le_add,
+      add_comm, ← add_sub_assoc, le_sub_iff_add_le]
+    · rw (config := {occs := .pos [1]}) [← one_mul ((2 * Real.cos 1) ^ t), ← add_mul,
+        ← Real.log_le_log_iff, Real.log_mul, Real.log_rpow]
+      · suffices h : 0 ≤ Real.log (1 + Real.sin t * 2) - Real.log (1 + Real.sin t) -
+          t * Real.log (2 * Real.cos 1) by linarith
+        let Φ : ℝ → ℝ := fun t => Real.log (1 + Real.sin t * 2) - Real.log (1 + Real.sin t) -
+          t * Real.log (2 * Real.cos 1)
+        have Φ0 : Φ 0 = 0 := by simp [Φ]
+        have : Φ t = Real.log (1 + Real.sin t * 2) - Real.log (1 + Real.sin t) -
+          t * Real.log (2 * Real.cos 1) := by simp [Φ]
+        rw [← Φ0, ← this]
+        suffices h : MonotoneOn Φ (Set.Icc 0 1) by
+          refine h (by simp) ?_ (le_of_lt ht.1)
+          exact Set.Ioo_subset_Icc_self ht
+        refine monotoneOn_of_deriv_nonneg ?_ ?_ ?_ ?_
+        · exact convex_Icc 0 1
+        · simp only [Φ]
+          have cont1 : ContinuousOn (fun t => Real.log (1 + Real.sin t * 2)) (Set.Icc 0 1) := by
+            refine ContinuousOn.log ?_ ?_
+            · fun_prop
+            · exact fun p hp => ne_of_gt (ine3 p hp)
+          have cont2 : ContinuousOn (fun t => Real.log (1 + Real.sin t)) (Set.Icc 0 1) := by
+            refine ContinuousOn.log ?_ ?_
+            · fun_prop
+            · intro p hp
+              refine ne_of_gt ?_
+              suffices 0 ≤ Real.sin p by linarith
+              refine Real.sin_nonneg_of_nonneg_of_le_pi hp.1 ?_
+              exact LE.le.trans hp.2 onelepi
+          fun_prop
+        · simp only [interior_Icc]
+          sorry
+        · simp only [interior_Icc]; intro x hx; sorry
+      · exact mul_pos (by linarith) Real.cos_one_pos
+      · exact ne_of_gt ine1
+      · exact ne_of_gt ine2
+      · exact mul_pos ine1 ine2
+      · exact ine3 t (Set.Ioo_subset_Icc_self ht)
+    · have : 1 < 1 / t := by
+        rw [lt_div_iff₀, one_mul]
+        · exact ht.2
+        · exact ht.1
+      have := θle1 this
+      simp_all only [θ, inv_pos, sub_pos, one_div_one_div]
+      linarith
+  · have := θpos hα
+    simp_all only [θ, sub_pos]
+    linarith
 
 lemma θrepos {α : ℝ} (hα : 1 < α) : ∀ ψ : ℝ, 0 < (1 + θ α * (cexp (I * ψ))).re := by
   intro ψ
