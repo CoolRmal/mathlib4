@@ -182,12 +182,13 @@ lemma compare {α : ℝ} (hα : 1 < α) : θ α * (1 - θ α)⁻¹ ≤ Real.sin 
         · simpa using one_div_lt_one_div_of_lt zero_lt_one hα
       exact h (1 / α) this
     intro t ht
-    have ine1 : 0 < 1 + Real.sin t := by
+    have ine1 : ∀ x ∈ Set.Ioo 0 1, 0 < 1 + Real.sin x := by
+      intro x hx
       refine lt_add_of_neg_add_lt_left ?_
       simp only [add_zero, ← Real.sin_pi_div_two, ← Real.sin_sub_pi, half_sub]
       refine Real.sin_lt_sin_of_lt_of_le_pi_div_two (by simp) ?_ ?_
-      · exact le_trans ht.2.le Real.one_le_pi_div_two
-      · refine lt_trans ?_ ht.1
+      · exact le_trans hx.2.le Real.one_le_pi_div_two
+      · refine lt_trans ?_ hx.1
         · simp [Real.pi_pos]
     have ine2 : 0 < (2 * Real.cos 1) ^ t := by
       refine Real.rpow_pos_of_pos ?_ t
@@ -212,6 +213,19 @@ lemma compare {α : ℝ} (hα : 1 < α) : θ α * (1 - θ α)⁻¹ ≤ Real.sin 
         suffices h : MonotoneOn Φ (Set.Icc 0 1) by
           refine h (by simp) ?_ (le_of_lt ht.1)
           exact Set.Ioo_subset_Icc_self ht
+        have diff1 : DifferentiableOn ℝ (fun t => Real.log (1 + Real.sin t * 2))
+          (Set.Ioo 0 1) := by
+          refine DifferentiableOn.log ?_ ?_
+          · fun_prop
+          · exact fun p hp => ne_of_gt (ine3 p (Set.Ioo_subset_Icc_self hp))
+        have diff2 : DifferentiableOn ℝ (fun t => Real.log (1 + Real.sin t)) (Set.Ioo 0 1) := by
+          refine DifferentiableOn.log ?_ ?_
+          · fun_prop
+          · intro p hp
+            refine ne_of_gt ?_
+            suffices 0 ≤ Real.sin p by linarith
+            refine Real.sin_nonneg_of_nonneg_of_le_pi hp.1.le ?_
+            exact LE.le.trans hp.2.le onelepi
         refine monotoneOn_of_deriv_nonneg ?_ ?_ ?_ ?_
         · exact convex_Icc 0 1
         · simp only [Φ]
@@ -228,13 +242,95 @@ lemma compare {α : ℝ} (hα : 1 < α) : θ α * (1 - θ α)⁻¹ ≤ Real.sin 
               refine Real.sin_nonneg_of_nonneg_of_le_pi hp.1 ?_
               exact LE.le.trans hp.2 onelepi
           fun_prop
-        · simp only [interior_Icc]
-          sorry
-        · simp only [interior_Icc]; intro x hx; sorry
+        · simp only [interior_Icc, Φ]; fun_prop
+        · simp only [interior_Icc, Φ]; intro x hx
+          rw [deriv_fun_sub, deriv_fun_sub, deriv.log, deriv.log, deriv_mul_const_field]
+          · simp only [differentiableAt_const, Real.differentiableAt_sin,
+              DifferentiableAt.fun_mul, deriv_fun_add, deriv_const', deriv_fun_mul,
+              Real.deriv_sin, mul_zero, add_zero, zero_add, deriv_id'', one_mul, sub_nonneg]
+            rw [div_sub_div, add_mul, mul_add, mul_one, one_mul, ← sub_sub, ← mul_comm (Real.sin x),
+              ← mul_comm 2, mul_assoc, tsub_right_comm, add_tsub_cancel_right,
+              two_mul (Real.cos x), add_tsub_cancel_right]
+            · suffices Real.log (2 * Real.cos 1) ≤ Real.cos 1 /
+                ((1 + Real.sin 1 * 2) * (1 + Real.sin 1)) by
+                have q : Real.sin x ≤ Real.sin 1 := by
+                  refine Real.sin_le_sin_of_le_of_le_pi_div_two ?_ ?_ ?_
+                  · refine LE.le.trans ?_ hx.1.le
+                    simp only [Left.neg_nonpos_iff]
+                    exact Real.pi_div_two_pos.le
+                  · exact Real.one_le_pi_div_two
+                  · exact hx.2.le
+                refine LE.le.trans this (div_le_div₀ ?_ ?_ ?_ ?_)
+                · refine Real.cos_nonneg_of_neg_pi_div_two_le_of_le ?_ ?_
+                  · refine LE.le.trans ?_ hx.1.le
+                    simp only [Left.neg_nonpos_iff]
+                    exact Real.pi_div_two_pos.le
+                  · exact le_trans hx.2.le Real.one_le_pi_div_two
+                · exact Real.cos_le_cos_of_nonneg_of_le_pi (hx.1.le) onelepi (hx.2.le)
+                · refine mul_pos ?_ ?_
+                  · exact ine3 x (Set.Ioo_subset_Icc_self hx)
+                  · exact ine1 x hx
+                · gcongr
+                  · exact (ine1 x hx).le
+                  · exact (ine3 1 (by simp)).le
+              refine LE.le.trans (b := 1 / 12) ?_ ?_
+              · have cosup : Real.cos 1 ≤ 13 / 24 := by
+                  have := (Real.sin_cos_bound_of_pos 1 zero_lt_one 0).2.2.2.le
+                  norm_num at this
+                  exact this
+                have cosup' : 2 * Real.cos 1 ≤ 13 / 12 := by linarith
+                calc
+                  Real.log (2 * Real.cos 1) ≤ Real.log (13 / 12) := by
+                    rw [Real.log_le_log_iff]
+                    · exact cosup'
+                    · exact mul_pos (by linarith) Real.cos_one_pos
+                    · linarith
+                  _ = Real.log (1 + 1 / 12) := by congr; linarith
+                  _ ≤ 1 + 1 / 12 - 1 := by exact Real.log_le_sub_one_of_pos (by linarith)
+                  _ = 1 / 12 := by linarith
+              · have sinup : Real.sin 1 ≤ 101 / 120 := by
+                  have := (Real.sin_cos_bound_of_pos 1 zero_lt_one 1).2.1.le
+                  norm_num at this
+                  exact this
+                have sinup' : (1 + Real.sin 1 * 2) * (1 + Real.sin 1) ≤ 161 * 221 / 7200 := by
+                  calc
+                    (1 + Real.sin 1 * 2) * (1 + Real.sin 1) ≤ (1 + 101 / 120 * 2) *
+                      (1 + 101 / 120) := by
+                      gcongr
+                      suffices 0 < Real.sin 1 by linarith
+                      exact Real.sin_pos_of_pos_of_le_one zero_lt_one (le_refl 1)
+                    _ ≤ 161 * 221 / 7200 := by linarith
+                have coslow : 389 / 720 ≤ Real.cos 1 := by
+                  have := (Real.sin_cos_bound_of_pos 1 zero_lt_one 1).2.2.1.le
+                  norm_num at this
+                  exact this
+                calc
+                  (1 / 12 : ℝ) ≤ 3890 / 35581 := by linarith
+                  _ = (7200 * (389 / 720)) / (161 * 221) := by linarith
+                  _ ≤ (7200 * Real.cos 1) / (161 * 221) := by linarith [coslow]
+                  _ ≤ Real.cos 1 / (161 * 221 / 7200) := by linarith
+                  _ ≤ Real.cos 1 / ((1 + Real.sin 1 * 2) * (1 + Real.sin 1)) := by
+                    gcongr
+                    refine mul_pos ?_ ?_
+                    · exact ine3 1 (by simp)
+                    · suffices 0 < Real.sin 1 by linarith
+                      exact Real.sin_pos_of_pos_of_le_one zero_lt_one (le_refl 1)
+            · exact ne_of_gt (ine3 x (Set.Ioo_subset_Icc_self hx))
+            · exact ne_of_gt (ine1 x hx)
+          · fun_prop
+          · exact ne_of_gt (ine1 x hx)
+          · fun_prop
+          · exact ne_of_gt (ine3 x (Set.Ioo_subset_Icc_self hx))
+          · exact diff1.differentiableAt (IsOpen.mem_nhds isOpen_Ioo hx)
+          · exact diff2.differentiableAt (IsOpen.mem_nhds isOpen_Ioo hx)
+          · refine DifferentiableAt.sub ?_ ?_
+            · exact diff1.differentiableAt (IsOpen.mem_nhds isOpen_Ioo hx)
+            · exact diff2.differentiableAt (IsOpen.mem_nhds isOpen_Ioo hx)
+          · fun_prop
       · exact mul_pos (by linarith) Real.cos_one_pos
-      · exact ne_of_gt ine1
+      · exact ne_of_gt (ine1 t ht)
       · exact ne_of_gt ine2
-      · exact mul_pos ine1 ine2
+      · exact mul_pos (ine1 t ht) ine2
       · exact ine3 t (Set.Ioo_subset_Icc_self ht)
     · have : 1 < 1 / t := by
         rw [lt_div_iff₀, one_mul]
@@ -526,7 +622,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [CompleteSpace E
 
 /-- Cauchy's integral formula for `n`-th order derivatives. -/
 theorem iteratedDeriv_eq_smul_circleIntegral {R : ℝ} {c : ℂ} {n : ℕ} {f : ℂ → E}
-    (hR : 0 < R) (hf : DiffContOnCl ℂ f (ball c R)) : iteratedDeriv n f c = n.factorial  •
+    (hR : 0 < R) (hf : DiffContOnCl ℂ f (ball c R)) : iteratedDeriv n f c = (n)!  •
     (2 * π * I : ℂ)⁻¹ • ∮ z in C(c, R), (z - c)⁻¹ ^ n • (z - c)⁻¹ • f z := by
   lift R to ℝ≥0 using hR.le
   rw [iteratedDeriv, ← (hf.hasFPowerSeriesOnBall hR).factorial_smul, cauchyPowerSeries]
@@ -535,7 +631,7 @@ theorem iteratedDeriv_eq_smul_circleIntegral {R : ℝ} {c : ℂ} {n : ℕ} {f : 
 /-- Cauchy's estimate for `n`-th order derivatives. -/
 theorem norm_iteratedDeriv_le_aux {c : ℂ} {R C : ℝ} {n : ℕ} {f : ℂ → E}
     (hR : 0 < R) (hf : DiffContOnCl ℂ f (ball c R)) (hC : ∀ z ∈ sphere c R, ‖f z‖ ≤ C) :
-    ‖iteratedDeriv n f c‖ ≤ n.factorial * C / R ^ n := by
+    ‖iteratedDeriv n f c‖ ≤ (n)! * C / R ^ n := by
   have : ∀ z ∈ sphere c R, ‖(z - c)⁻¹ ^ n • (z - c)⁻¹ • f z‖ ≤ C / (R ^ n  * R) :=
     fun z (hz : ‖z - c‖ = R) => by
     have := (div_le_div_iff_of_pos_right (mul_pos (pow_pos hR n) hR)).2 (hC z hz)
@@ -543,33 +639,33 @@ theorem norm_iteratedDeriv_le_aux {c : ℂ} {R C : ℝ} {n : ℕ} {f : ℂ → E
       mul_comm R, ge_iff_le]
     exact this
   calc
-    ‖iteratedDeriv n f c‖ = ‖n.factorial • (2 * π * I : ℂ)⁻¹ •
+    ‖iteratedDeriv n f c‖ = ‖(n)! • (2 * π * I : ℂ)⁻¹ •
       ∮ z in C(c, R), (z - c)⁻¹ ^ n • (z - c)⁻¹ • f z‖ :=
       congr_arg norm (iteratedDeriv_eq_smul_circleIntegral hR hf)
-    _ ≤ n.factorial * (R * (C / (R ^ n * R))) := by
+    _ ≤ (n)! * (R * (C / (R ^ n * R))) := by
       simp only [RCLike.norm_nsmul (K := ℂ), nsmul_eq_mul]
       have := (circleIntegral.norm_two_pi_i_inv_smul_integral_le_of_norm_le_const hR.le this)
-      refine mul_le_mul_of_nonneg_left this (?_ : (0 : ℝ) ≤ n.factorial)
+      refine mul_le_mul_of_nonneg_left this (?_ : (0 : ℝ) ≤ (n)!)
       exact_mod_cast ((Nat.factorial_pos n).le)
-    _ = n.factorial * C / R ^ n := by
+    _ = (n)! * C / R ^ n := by
       grind only [cases Or]
 
 /-- Apply Cauchy's estimate to `g`. -/
 theorem CauchyEstimate_of_g {α t : ℝ} (hα : 1 < α) (ht : 0 < t) (n : ℕ) :
-    |iteratedDeriv n (g α) t| ≤ n.factorial * rexp (- t ^ (- α) / 2) / (θ α * t) ^ n := by
+    |iteratedDeriv n (g α) t| ≤ (n)! * rexp (- t ^ (- α) / 2) / (θ α * t) ^ n := by
   rw [← Real.norm_eq_abs, ← Complex.norm_real, ← iteratedDeriv_cg_eq_iteratedDeriv_g (α := α) n ht]
   exact norm_iteratedDeriv_le_aux (mul_pos (θpos hα) ht) (cgDiffContOnCl ht hα)
     (estimate_on_sphere_of_g hα ht)
 
 /-- Tychonov's counterexample. -/
-def u α x t := ∑' (i : ℕ), iteratedDeriv i (g α) t * ((2 * i).factorial : ℝ)⁻¹ * x ^ (2 * i)
+def u α x t := ∑' (i : ℕ), iteratedDeriv i (g α) t * ((2 * i)! : ℝ)⁻¹ * x ^ (2 * i)
 
-lemma lem_fac (i : ℕ) : (i.factorial : ℝ) ^ 2 ≤ (2 * i).factorial := by
+lemma lem_fac (i : ℕ) : ((i)! : ℝ) ^ 2 ≤ (2 * i)! := by
   norm_cast
   rw [sq, two_mul]
   exact Nat.le_of_dvd (Nat.factorial_pos _) (Nat.factorial_mul_factorial_dvd_factorial_add _ _)
 
-lemma lem_fac' (i : ℕ) : (i.factorial : ℝ) *  ((i + 1).factorial : ℝ) ≤ (2 * i).factorial := by
+lemma lem_fac' (i : ℕ) : ((i)! : ℝ) *  ((i + 1)! : ℝ) ≤ (2 * i)! := by
   induction i with
   | zero => simp
   | succ i ih =>
@@ -578,9 +674,9 @@ lemma lem_fac' (i : ℕ) : (i.factorial : ℝ) *  ((i + 1).factorial : ℝ) ≤ 
 
 /-- Absolutely convergence of the sequence obtained from Cauchy's estimate. -/
 theorem dom_seq (x t α : ℝ) : (Summable fun (i : ℕ) =>
-    rexp (- t ^ (- α) / 2) * (i.factorial : ℝ)⁻¹ * (θ α * t) ^ (- i : ℝ) * |x| ^ (2 * i)) := by
-  have : Summable (fun i : ℕ => (i.factorial : ℝ)⁻¹ * (1 / (θ α * t) * |x|^2) ^ i) := by
-    have : Summable (fun i : ℕ => (1 / (θ α * t) * |x|^2) ^ i / (i.factorial : ℝ)) := by
+    rexp (- t ^ (- α) / 2) * ((i)! : ℝ)⁻¹ * (θ α * t) ^ (- i : ℝ) * |x| ^ (2 * i)) := by
+  have : Summable (fun i : ℕ => ((i)! : ℝ)⁻¹ * (1 / (θ α * t) * |x|^2) ^ i) := by
+    have : Summable (fun i : ℕ => (1 / (θ α * t) * |x|^2) ^ i / ((i)! : ℝ)) := by
       exact Real.summable_pow_div_factorial _
     exact this.congr fun i => by ring
   convert this.mul_left (Real.exp (- t ^ (-α) / 2)) using 2
@@ -600,7 +696,7 @@ lemma DifferentiableAt_of_isOpen (f : E → F) {s : Set E} (hs : IsOpen s) {x : 
 
 /-- The infinite series used to define `u` is pointwise summable. -/
 theorem summable_u {t α : ℝ} (x : ℝ) (ht : 0 < t) (hα : 1 < α) :
-    Summable fun n ↦ iteratedDeriv n (g α) t * (↑(2 * n).factorial)⁻¹ * x ^ (2 * n) := by
+    Summable fun n ↦ iteratedDeriv n (g α) t * (↑(2 * n)!)⁻¹ * x ^ (2 * n) := by
   simp only [← summable_norm_iff, norm_mul, Real.norm_eq_abs, norm_inv, RCLike.norm_natCast,
     norm_pow, abs_abs]
   refine Summable.of_nonneg_of_le ?_ ?_ (dom_seq x t α)
@@ -608,12 +704,12 @@ theorem summable_u {t α : ℝ} (x : ℝ) (ht : 0 < t) (hα : 1 < α) :
   · intro n; simp only [norm_mul, Real.norm_eq_abs, abs_abs, norm_inv, RCLike.norm_natCast,
     norm_pow, Real.rpow_neg_natCast, zpow_neg, zpow_natCast]
     calc
-      |iteratedDeriv n (g α) t| * (↑(2 * n).factorial)⁻¹ * |x| ^ (2 * n) ≤ n.factorial *
-      rexp (- t ^ (-α) / 2) / (θ α * t) ^ n * (↑(2 * n).factorial)⁻¹ * |x| ^ (2 * n) := by
+      |iteratedDeriv n (g α) t| * (↑(2 * n)!)⁻¹ * |x| ^ (2 * n) ≤ (n)! *
+      rexp (- t ^ (-α) / 2) / (θ α * t) ^ n * (↑(2 * n)!)⁻¹ * |x| ^ (2 * n) := by
         rw [mul_assoc, mul_assoc]; gcongr; exact CauchyEstimate_of_g hα ht n
       _ ≤ rexp (- t ^ (-α) / 2) / (θ α * t) ^ n *
-        (n.factorial * (↑(2 * n).factorial)⁻¹) * |x| ^ (2 * n) := by field_simp; simp
-      _ ≤ rexp (-t ^ (-α) / 2) * (↑n.factorial)⁻¹ * ((θ α * t) ^ n)⁻¹ * |x| ^ (2 * n) := by
+        ((n)! * (↑(2 * n)!)⁻¹) * |x| ^ (2 * n) := by field_simp; simp
+      _ ≤ rexp (-t ^ (-α) / 2) * (↑(n)!)⁻¹ * ((θ α * t) ^ n)⁻¹ * |x| ^ (2 * n) := by
         field_simp; rw [mul_div_assoc, mul_div_assoc]
         refine mul_le_mul_of_nonneg_right (lem_fac n) (div_nonneg (by positivity) ?_)
         refine pow_nonneg ?_ n
@@ -635,7 +731,7 @@ lemma upperboundK {K : Set ℝ} (hCK : IsCompact K) : ∃ a, ∀ x ∈ K, |x| �
 /-- Calculating the time derivative of `u`. Need to verify locally uniform convergence. -/
 theorem deriv_u_t {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
     deriv (fun t ↦ u α x t) t = ∑' (i : ℕ), iteratedDeriv (i + 1) (g α) t *
-    ((2 * i).factorial : ℝ)⁻¹ * x ^ (2 * i) := by
+    ((2 * i)! : ℝ)⁻¹ * x ^ (2 * i) := by
   unfold u
   rw [← derivWithin_of_isOpen (isOpen_Ioi (a := 0)), derivWithin_tsum (isOpen_Ioi (a := 0))]
   · congr; ext n
@@ -644,14 +740,14 @@ theorem deriv_u_t {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
   · simp only [Set.mem_Ioi, ht]
   · intro y hy; exact summable_u x hy hα
   · unfold SummableLocallyUniformlyOn HasSumLocallyUniformlyOn
-    use (fun t => ∑' (n : ℕ), derivWithin (fun t ↦ iteratedDeriv n (g α) t * (↑(2 * n).factorial)⁻¹
+    use (fun t => ∑' (n : ℕ), derivWithin (fun t ↦ iteratedDeriv n (g α) t * (↑(2 * n)!)⁻¹
       * x ^ (2 * n)) (Set.Ioi 0) t)
     rw [tendstoLocallyUniformlyOn_iff_forall_isCompact (isOpen_Ioi (a := 0))]
     intro K hK hCK
     obtain ⟨a, ha⟩ := lowerboundK hK hCK
-    let v : ℕ → ℝ := fun n => (n.factorial : ℝ)⁻¹ * (1 / (θ α * a) * |x|^2) ^ n / (θ α * a)
+    let v : ℕ → ℝ := fun n => ((n)! : ℝ)⁻¹ * (1 / (θ α * a) * |x|^2) ^ n / (θ α * a)
     refine tendstoUniformlyOn_tsum (u := v) (s := K) ?_ ?_
-    · have h_summable : Summable (fun n : ℕ => (1 / (θ α * a) * |x|^2)^n / (n.factorial: ℝ)) := by
+    · have h_summable : Summable (fun n : ℕ => (1 / (θ α * a) * |x|^2)^n / ((n)!: ℝ)) := by
         exact Real.summable_pow_div_factorial _
       convert h_summable.div_const (θ α * a) using 2; ring!
     · intro n z hz
@@ -663,11 +759,11 @@ theorem deriv_u_t {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
         have hh (r : ℝ) (hr : 0 < r): 0 ≤ (1 / (θ α * r) * |x| ^ 2) ^ n := by
           exact pow_nonneg (h r hr) n
         calc
-        |iteratedDeriv (n + 1) (g α) z| * (↑(2 * n).factorial)⁻¹ * |x| ^ (2 * n) ≤
-          (n + 1).factorial * rexp (- z ^ (- α) / 2) / (θ α * z) ^ (n + 1) *
-          (↑(2 * n).factorial)⁻¹ * |x| ^ (2 * n) := by
+        |iteratedDeriv (n + 1) (g α) z| * (↑(2 * n)!)⁻¹ * |x| ^ (2 * n) ≤
+          (n + 1)! * rexp (- z ^ (- α) / 2) / (θ α * z) ^ (n + 1) *
+          (↑(2 * n)!)⁻¹ * |x| ^ (2 * n) := by
             gcongr; exact CauchyEstimate_of_g hα (hK hz) (n + 1)
-          _ ≤ rexp (- z ^ (- α) / 2) * (n.factorial : ℝ)⁻¹ * (1 / (θ α * z) * |x|^2) ^ n
+          _ ≤ rexp (- z ^ (- α) / 2) * ((n)! : ℝ)⁻¹ * (1 / (θ α * z) * |x|^2) ^ n
             / (θ α * z) := by
             field_simp; rw [mul_comm, ← mul_assoc, mul_div_assoc, mul_div_assoc]
             refine mul_le_mul (lem_fac' n) ?_ ?_ ?_
@@ -676,18 +772,18 @@ theorem deriv_u_t {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
               refine pow_nonneg ?_ (n + 1)
               exact le_of_lt (mul_pos (θpos hα) (hK hz))
             · positivity
-          _ ≤ (n.factorial : ℝ)⁻¹ * (1 / (θ α * z) * |x|^2) ^ n / (θ α * z) := by
+          _ ≤ ((n)! : ℝ)⁻¹ * (1 / (θ α * z) * |x|^2) ^ n / (θ α * z) := by
             gcongr
             · exact le_of_lt (mul_pos (θpos hα) (hK hz))
             · exact hh z (hK hz)
-            · rw [← one_mul (n.factorial : ℝ)⁻¹]; gcongr
+            · rw [← one_mul ((n)! : ℝ)⁻¹]; gcongr
               · simp only [Real.exp_le_one_iff]
                 suffices 0 ≤ z ^ (-α) / 2 from by linarith
                 exact div_nonneg (Real.rpow_nonneg (le_of_lt (hK hz)) (-α)) (by positivity)
               · simp
-          _ ≤ (n.factorial : ℝ)⁻¹ * (1 / (θ α * a) * |x|^2) ^ n / (θ α * a) := by
+          _ ≤ ((n)! : ℝ)⁻¹ * (1 / (θ α * a) * |x|^2) ^ n / (θ α * a) := by
             rw [mul_div_assoc, mul_div_assoc]
-            refine mul_le_mul_of_nonneg_left (a := (n.factorial : ℝ)⁻¹) ?_ (by positivity)
+            refine mul_le_mul_of_nonneg_left (a := ((n)! : ℝ)⁻¹) ?_ (by positivity)
             gcongr
             · exact hh a ha.1
             · exact mul_pos (θpos hα) ha.1
@@ -710,19 +806,19 @@ theorem deriv_u_t {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
   · simp [ht]
 
 lemma dom_seq' (x t α : ℝ) : (Summable fun (i : ℕ) =>
-    rexp (- t ^ (- α) / 2) * (i.factorial : ℝ)⁻¹ * (θ α * t) ^ (- (i + 1) : ℝ)
+    rexp (- t ^ (- α) / 2) * ((i)! : ℝ)⁻¹ * (θ α * t) ^ (- (i + 1) : ℝ)
     * |x| ^ (2 * i)) := by
-  suffices h_factor : Summable (fun i : ℕ => ((Nat.factorial i)⁻¹ : ℝ) * (θ α * t) ^
+  suffices h_factor : Summable (fun i : ℕ => (((i)!)⁻¹ : ℝ) * (θ α * t) ^
     (-((i : ℝ) + 1)) * |x| ^ (2 * i)) by
     convert h_factor.mul_left ( Real.exp ( -t ^ ( -α ) / 2 ) ) using 2 ; ring
-  have h_exp_series : Summable (fun i : ℕ => (|x|^2 / (θ α * t)) ^ i / (Nat.factorial i : ℝ)) := by
+  have h_exp_series : Summable (fun i : ℕ => (|x|^2 / (θ α * t)) ^ i / ((i)! : ℝ)) := by
     exact Real.summable_pow_div_factorial _
   convert h_exp_series.mul_left ((θ α * t)⁻¹) using 2; norm_cast; norm_num; ring_nf
   norm_num [pow_mul']
 
 /-- The infinite series obtained by termwise differentiating `u` is pointwise summable. -/
 theorem summable_u' {t α : ℝ} (x : ℝ) (ht : 0 < t) (hα : 1 < α) :
-    Summable fun b ↦ iteratedDeriv (b + 1) (g α) t * (↑(2 * b).factorial)⁻¹ * x ^ (2 * b):= by
+    Summable fun b ↦ iteratedDeriv (b + 1) (g α) t * (↑(2 * b)!)⁻¹ * x ^ (2 * b):= by
   simp only [← summable_norm_iff, norm_mul, Real.norm_eq_abs, norm_inv, RCLike.norm_natCast,
     norm_pow, abs_abs]
   refine Summable.of_nonneg_of_le ?_ ?_ (dom_seq' x t α)
@@ -730,17 +826,17 @@ theorem summable_u' {t α : ℝ} (x : ℝ) (ht : 0 < t) (hα : 1 < α) :
   · intro n; simp only [norm_mul, Real.norm_eq_abs, abs_abs, norm_inv, RCLike.norm_natCast,
       norm_pow]
     calc
-      |iteratedDeriv (n + 1) (g α) t| * (↑(2 * n).factorial)⁻¹ * |x| ^ (2 * n) ≤ (n + 1).factorial *
-      rexp (- t ^ (-α) / 2) / (θ α * t) ^ (n + 1) * (↑(2 * n).factorial)⁻¹ * |x| ^ (2 * n) := by
+      |iteratedDeriv (n + 1) (g α) t| * (↑(2 * n)!)⁻¹ * |x| ^ (2 * n) ≤ (n + 1)! *
+      rexp (- t ^ (-α) / 2) / (θ α * t) ^ (n + 1) * (↑(2 * n)!)⁻¹ * |x| ^ (2 * n) := by
         rw [mul_assoc, mul_assoc]; gcongr; exact CauchyEstimate_of_g hα ht (n + 1)
       _ ≤ rexp (- t ^ (-α) / 2) / (θ α * t) ^ (n + 1) *
-        ((n + 1).factorial * (↑(2 * n).factorial)⁻¹) * |x| ^ (2 * n) := by
+        ((n + 1)! * (↑(2 * n)!)⁻¹) * |x| ^ (2 * n) := by
         field_simp
         simp only [le_refl]
-      _ ≤ rexp (-t ^ (-α) / 2) * (↑n.factorial)⁻¹ *
+      _ ≤ rexp (-t ^ (-α) / 2) * (↑(n)!)⁻¹ *
         ((θ α * t) ^ (-(n + 1) : ℝ)) * |x| ^ (2 * n) := by
         field_simp; rw [mul_assoc, mul_comm (|x| ^ (2 * n)), ← mul_assoc, mul_div_assoc,
-          mul_comm ((n + 1).factorial : ℝ), div_eq_mul_inv, mul_assoc (b := |x| ^ (2 * n))]
+          mul_comm ((n + 1)! : ℝ), div_eq_mul_inv, mul_assoc (b := |x| ^ (2 * n))]
         rw (config := {occs := .neg [0]}) [Real.rpow_neg]
         · gcongr
           · refine mul_nonneg (by positivity) ?_; simp
@@ -749,8 +845,6 @@ theorem summable_u' {t α : ℝ} (x : ℝ) (ht : 0 < t) (hα : 1 < α) :
           · norm_cast; exact pow_pos (mul_pos (θpos hα) ht) (n + 1)
           · norm_cast
         · exact le_of_lt (mul_pos (θpos hα) ht)
-
-variable {β α : Type*} [AddCommGroup α] [UniformSpace α] [TopologicalSpace β]
 
 theorem HasSumLocallyUniformlyOn_iff_tailsumHasSumLocallyUniformlyOn
     (f : ℕ → ℝ → ℝ) (s : Set ℝ) (k : ℕ) :
@@ -761,22 +855,22 @@ theorem HasSumLocallyUniformlyOn_iff_tailsumHasSumLocallyUniformlyOn
 /-- Calculating the space derivative of `u`. Need to verify locally uniform convergence. -/
 theorem deriv2_u_x {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
     iteratedDeriv 2 (fun x ↦ u α x t) x =
-    ∑' (i : ℕ), iteratedDeriv (i + 1) (g α) t * ((2 * i).factorial : ℝ)⁻¹ * x ^ (2 * i) := by
+    ∑' (i : ℕ), iteratedDeriv (i + 1) (g α) t * ((2 * i)! : ℝ)⁻¹ * x ^ (2 * i) := by
   unfold u
-  have eq : ∀ x : ℝ, ∀ i : ℕ, iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹ *
+  have eq : ∀ x : ℝ, ∀ i : ℕ, iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1))!)⁻¹ *
     (2 * (i + 1) * ((2 * (i + 1) - 1) * x ^ (2 * (i + 1) - 1 - 1))) =
-    iteratedDeriv (i + 1) (g α) t * (↑(2 * i).factorial)⁻¹ * x ^ (2 * i) := by
+    iteratedDeriv (i + 1) (g α) t * (↑(2 * i)!)⁻¹ * x ^ (2 * i) := by
     intro x i
     calc
-      iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹ *
+      iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1))!)⁻¹ *
         (2 * (i + 1) * ((2 * (i + 1) - 1) * x ^ (2 * (i + 1) - 1 - 1)))
-        = iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹ *
+        = iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1))!)⁻¹ *
         (2 * (i + 1) * ((2 * i + 1) * x ^ (2 * i))) := by
           simp only [mul_eq_mul_left_iff, mul_eq_zero, OfNat.ofNat_ne_zero, false_or, inv_eq_zero,
             Nat.cast_eq_zero]; apply Or.inl; apply Or.inl; grind
-      _ = iteratedDeriv (i + 1) (g α) t * ((↑(2 * (i + 1)).factorial)⁻¹ *
+      _ = iteratedDeriv (i + 1) (g α) t * ((↑(2 * (i + 1))!)⁻¹ *
         (2 * (i + 1)) * (2 * i + 1)) * x ^ (2 * i) := by ring
-      _ = iteratedDeriv (i + 1) (g α) t * (↑(2 * i).factorial)⁻¹ * x ^ (2 * i) := by
+      _ = iteratedDeriv (i + 1) (g α) t * (↑(2 * i)!)⁻¹ * x ^ (2 * i) := by
           congr; field_simp; norm_cast
           rw [mul_assoc, ← Nat.factorial_succ]
           have : 2 * (i + 1) = (2 * i + 1) + 1 := by omega
@@ -803,51 +897,51 @@ theorem deriv2_u_x {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
         Nat.one_le_ofNat, OfNat.one_ne_ofNat, or_false, deriv_const_mul_field',
         differentiableAt_fun_id, deriv_fun_pow, Nat.cast_mul, Nat.cast_ofNat, deriv_id'', mul_one]
       simp_all only [← iteratedDeriv_eq_iterate, ← iteratedDeriv_succ', iteratedDeriv_zero]
-      use (fun b => ∑' (i : ℕ), iteratedDeriv i (g α) t * ((2 * i).factorial : ℝ)⁻¹
+      use (fun b => ∑' (i : ℕ), iteratedDeriv i (g α) t * ((2 * i)! : ℝ)⁻¹
         * (2 * i * b ^ (2 * i - 1)))
       apply (HasSumLocallyUniformlyOn_iff_tailsumHasSumLocallyUniformlyOn
-        (fun n x ↦ iteratedDeriv n (g α) t * (↑(2 * n).factorial)⁻¹ *
+        (fun n x ↦ iteratedDeriv n (g α) t * (↑(2 * n)!)⁻¹ *
         (2 * n * x ^ (2 * n - 1))) Set.univ 1).2
       simp only [HasSumLocallyUniformlyOn, Nat.cast_add, Nat.cast_one]
-      have eq' : ∀ (x : ℝ), ∀ (i : ℕ), iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹
+      have eq' : ∀ (x : ℝ), ∀ (i : ℕ), iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1))!)⁻¹
         * (2 * (i + 1) * x ^ (2 * (i + 1) - 1)) = iteratedDeriv (i + 1) (g α) t *
-        (↑(2 * i + 1).factorial)⁻¹ * x ^ (2 * i + 1) := by
+        (↑(2 * i + 1)!)⁻¹ * x ^ (2 * i + 1) := by
         intro x i
         calc
-        iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹ *
+        iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1))!)⁻¹ *
           (2 * (i + 1) * x ^ (2 * (i + 1) - 1))
-          = iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1)).factorial)⁻¹ *
+          = iteratedDeriv (i + 1) (g α) t * (↑(2 * (i + 1))!)⁻¹ *
           (2 * (i + 1) * x ^ (2 * i + 1)) := by
           simp only [mul_eq_mul_left_iff, mul_eq_zero, OfNat.ofNat_ne_zero, false_or, inv_eq_zero,
             Nat.cast_eq_zero]; apply Or.inl; apply Or.inl; grind
-        _ = iteratedDeriv (i + 1) (g α) t * (↑(2 * i + 2).factorial)⁻¹ *
+        _ = iteratedDeriv (i + 1) (g α) t * (↑(2 * i + 2)!)⁻¹ *
           (2 * i + 2) * x ^ (2 * i + 1) := by ring_nf
-        _ = iteratedDeriv (i + 1) (g α) t * (↑(2 * i + 1).factorial)⁻¹ * x ^ (2 * i + 1) := by
+        _ = iteratedDeriv (i + 1) (g α) t * (↑(2 * i + 1)!)⁻¹ * x ^ (2 * i + 1) := by
           rw [← mul_comm (x ^ (2 * i + 1)), ← mul_comm (x ^ (2 * i + 1))]
           simp only [mul_eq_mul_left_iff, ne_eq, Nat.add_eq_zero, mul_eq_zero, OfNat.ofNat_ne_zero,
             false_or, one_ne_zero, and_false, not_false_eq_true, pow_eq_zero_iff]
           apply Or.inl; rw [mul_assoc]; simp only [mul_eq_mul_left_iff]
           apply Or.inl; field_simp; norm_cast
       refine TendstoLocallyUniformlyOn.congr_right (f := fun b ↦ ∑' (i : ℕ),
-        iteratedDeriv (i + 1) (g α) t * (↑(2 * i + 1).factorial)⁻¹ * b ^ (2 * i + 1)) ?_ ?_
+        iteratedDeriv (i + 1) (g α) t * (↑(2 * i + 1)!)⁻¹ * b ^ (2 * i + 1)) ?_ ?_
       · refine TendstoLocallyUniformlyOn.congr (F := fun (I : Finset ℕ) b ↦ ∑ i ∈ I,
-          iteratedDeriv (i + 1) (g α) t * (↑(2 * i + 1).factorial)⁻¹ * b ^ (2 * i + 1)) ?_ ?_
+          iteratedDeriv (i + 1) (g α) t * (↑(2 * i + 1)!)⁻¹ * b ^ (2 * i + 1)) ?_ ?_
         · rw [tendstoLocallyUniformlyOn_iff_forall_isCompact isOpen_univ]
           intro K hK hCK
           obtain ⟨a, ha⟩ := upperboundK hCK
-          let v : ℕ → ℝ := fun n => (↑n.factorial)⁻¹ / (θ α * t) ^ (n + 1) * a ^ (2 * n + 1)
+          let v : ℕ → ℝ := fun n => (↑(n)!)⁻¹ / (θ α * t) ^ (n + 1) * a ^ (2 * n + 1)
           refine tendstoUniformlyOn_tsum (u := v) (s := K) ?_ ?_
-          · have h_exp : Summable (fun n : ℕ => (n.factorial : ℝ)⁻¹ * (a^2 / (θ α * t))^n) := by
+          · have h_exp : Summable (fun n : ℕ => ((n)! : ℝ)⁻¹ * (a^2 / (θ α * t))^n) := by
               convert Real.summable_pow_div_factorial (a^2 /(θ α * t)) using 2; ring
             convert h_exp.mul_left (a / (θ α * t)) using 2; ring
           · intro n z hz
             simp only [norm_mul, Real.norm_eq_abs, norm_inv, RCLike.norm_natCast, norm_pow]
             calc
-              |iteratedDeriv (n + 1) (g α) t| * (↑(2 * n + 1).factorial)⁻¹ * |z| ^ (2 * n + 1)
-              ≤ (n + 1).factorial * rexp (- t ^ (- α) / 2) / (θ α * t) ^ (n + 1)
-                * (↑(2 * n + 1).factorial)⁻¹ * |z| ^ (2 * n + 1) := by
+              |iteratedDeriv (n + 1) (g α) t| * (↑(2 * n + 1)!)⁻¹ * |z| ^ (2 * n + 1)
+              ≤ (n + 1)! * rexp (- t ^ (- α) / 2) / (θ α * t) ^ (n + 1)
+                * (↑(2 * n + 1)!)⁻¹ * |z| ^ (2 * n + 1) := by
                 gcongr; exact CauchyEstimate_of_g hα ht (n + 1)
-              _ ≤ (↑n.factorial)⁻¹ * rexp (- t ^ (- α) / 2) / (θ α * t) ^ (n + 1)
+              _ ≤ (↑(n)!)⁻¹ * rexp (- t ^ (- α) / 2) / (θ α * t) ^ (n + 1)
                  * |z| ^ (2 * n + 1) := by
                 field_simp; rw [mul_comm, ← mul_assoc]; gcongr
                 · exact pow_nonneg (le_of_lt (mul_pos (θpos hα) ht)) (n + 1)
@@ -855,10 +949,10 @@ theorem deriv2_u_x {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
                   norm_cast
                   apply Nat.factorial_le
                   linarith
-              _ ≤ (↑n.factorial)⁻¹ / (θ α * t) ^ (n + 1) * |z| ^ (2 * n + 1) := by
+              _ ≤ (↑(n)!)⁻¹ / (θ α * t) ^ (n + 1) * |z| ^ (2 * n + 1) := by
                 gcongr
                 · exact pow_nonneg (le_of_lt (mul_pos (θpos hα) ht)) (n + 1)
-                · rw (config := {occs := .neg [0]}) [← mul_one ((n.factorial : ℝ)⁻¹)]
+                · rw (config := {occs := .neg [0]}) [← mul_one (((n)! : ℝ)⁻¹)]
                   gcongr
                   · simp only [mul_one, le_refl]
                   · simp only [Real.exp_le_one_iff]
@@ -879,43 +973,43 @@ theorem deriv2_u_x {x t α : ℝ} (ht : 0 < t) (hα : 1 < α) :
         mul_one, differentiableAt_const, DifferentiableAt.fun_pow, deriv_fun_mul, deriv_const',
         zero_mul, mul_zero, add_zero, zero_add, Nat.one_le_ofNat, le_refl]
       simp_all only [← iteratedDeriv_eq_iterate, ← iteratedDeriv_succ', iteratedDeriv_zero]
-      use (fun b => ∑' (i : ℕ), iteratedDeriv i (g α) t * ((2 * i).factorial : ℝ)⁻¹
+      use (fun b => ∑' (i : ℕ), iteratedDeriv i (g α) t * ((2 * i)! : ℝ)⁻¹
         * (2 * i * (((2 * i - 1 : ℕ) : ℝ) * b ^ (2 * i - 1 - 1))))
       apply (HasSumLocallyUniformlyOn_iff_tailsumHasSumLocallyUniformlyOn
-        (fun n x ↦ iteratedDeriv n (g α) t * (↑(2 * n).factorial)⁻¹ *
+        (fun n x ↦ iteratedDeriv n (g α) t * (↑(2 * n)!)⁻¹ *
         (2 * n * (((2 * n - 1 : ℕ) : ℝ) * x ^ (2 * n - 1 - 1))))
         Set.univ 1).2
       simp only [HasSumLocallyUniformlyOn, Nat.cast_add, Nat.cast_one, Nat.ofNat_pos,
         mul_pos_iff_of_pos_left, add_pos_iff, zero_lt_one, or_true, Nat.cast_pred, Nat.cast_mul,
         Nat.cast_ofNat]
       refine TendstoLocallyUniformlyOn.congr_right (f := fun b ↦
-        ∑' (i : ℕ), iteratedDeriv (i + 1) (g α) t * (↑(2 * i).factorial)⁻¹ * b ^ (2 * i)) ?_ ?_
+        ∑' (i : ℕ), iteratedDeriv (i + 1) (g α) t * (↑(2 * i)!)⁻¹ * b ^ (2 * i)) ?_ ?_
       · refine TendstoLocallyUniformlyOn.congr (F := fun (I : Finset ℕ) b ↦
-          ∑ i ∈ I, iteratedDeriv (i + 1) (g α) t * (↑(2 * i).factorial)⁻¹ * b ^ (2 * i)) ?_ ?_
+          ∑ i ∈ I, iteratedDeriv (i + 1) (g α) t * (↑(2 * i)!)⁻¹ * b ^ (2 * i)) ?_ ?_
         · rw [tendstoLocallyUniformlyOn_iff_forall_isCompact isOpen_univ]
           intro K hK hCK
           obtain ⟨a, ha⟩ := upperboundK hCK
-          let v : ℕ → ℝ := fun n => (↑n.factorial)⁻¹ / (θ α * t) ^ (n + 1) * a ^ (2 * n)
+          let v : ℕ → ℝ := fun n => (↑(n)!)⁻¹ / (θ α * t) ^ (n + 1) * a ^ (2 * n)
           refine tendstoUniformlyOn_tsum (u := v) (s := K) ?_ ?_
-          · have h_exp : Summable (fun n : ℕ => (n.factorial : ℝ)⁻¹ * (a^2 / (θ α * t))^n) := by
+          · have h_exp : Summable (fun n : ℕ => ((n)! : ℝ)⁻¹ * (a^2 / (θ α * t))^n) := by
               convert Real.summable_pow_div_factorial (a^2 /(θ α * t)) using 2; ring
             convert h_exp.mul_left (1 / (θ α * t)) using 2; ring
           · intro n z hz
             simp only [norm_mul, Real.norm_eq_abs, norm_inv, RCLike.norm_natCast, norm_pow]
             calc
-              |iteratedDeriv (n + 1) (g α) t| * (↑(2 * n).factorial)⁻¹ * |z| ^ (2 * n)
-              ≤ (n + 1).factorial * rexp (- t ^ (- α) / 2) / (θ α * t) ^ (n + 1)
-                * (↑(2 * n).factorial)⁻¹ * |z| ^ (2 * n) := by
+              |iteratedDeriv (n + 1) (g α) t| * (↑(2 * n)!)⁻¹ * |z| ^ (2 * n)
+              ≤ (n + 1)! * rexp (- t ^ (- α) / 2) / (θ α * t) ^ (n + 1)
+                * (↑(2 * n)!)⁻¹ * |z| ^ (2 * n) := by
                 gcongr; exact CauchyEstimate_of_g hα ht (n + 1)
-              _ ≤ (↑n.factorial)⁻¹ * rexp (- t ^ (- α) / 2) / (θ α * t) ^ (n + 1)
+              _ ≤ (↑(n)!)⁻¹ * rexp (- t ^ (- α) / 2) / (θ α * t) ^ (n + 1)
                  * |z| ^ (2 * n) := by
                 field_simp; rw [mul_comm, ← mul_assoc]; gcongr
                 · exact pow_nonneg (le_of_lt (mul_pos (θpos hα) ht)) (n + 1)
                 · exact lem_fac' n
-              _ ≤ (↑n.factorial)⁻¹ / (θ α * t) ^ (n + 1) * |z| ^ (2 * n) := by
+              _ ≤ (↑(n)!)⁻¹ / (θ α * t) ^ (n + 1) * |z| ^ (2 * n) := by
                 gcongr
                 · exact pow_nonneg (le_of_lt (mul_pos (θpos hα) ht)) (n + 1)
-                · rw (config := {occs := .neg [0]}) [← mul_one ((n.factorial : ℝ)⁻¹)]
+                · rw (config := {occs := .neg [0]}) [← mul_one (((n)! : ℝ)⁻¹)]
                   gcongr
                   · simp only [mul_one, le_refl]
                   · simp only [Real.exp_le_one_iff]
@@ -945,14 +1039,14 @@ theorem isClassical1DHeatSolution_u {α : ℝ} (hα : 1 < α) :
     intro t ht
     rw [← DifferentiableAt_of_isOpen]
     · let g' := fun (i : ℕ) (t : ℝ) =>
-        deriv (fun t => iteratedDeriv i (g α) t) t * (↑(2 * i).factorial)⁻¹ * x ^ (2 * i)
+        deriv (fun t => iteratedDeriv i (g α) t) t * (↑(2 * i)!)⁻¹ * x ^ (2 * i)
       apply HasDerivAt.differentiableAt (f' := ∑' (i : ℕ), g' i t)
       simp only [u]
-      let v : ℕ → ℝ := fun n => (n.factorial : ℝ)⁻¹ * (1 / (θ α * (t / 2)) * |x|^2) ^ n
+      let v : ℕ → ℝ := fun n => ((n)! : ℝ)⁻¹ * (1 / (θ α * (t / 2)) * |x|^2) ^ n
         / (θ α * (t / 2))
       have hv : Summable v := by
         have h_summable : Summable (fun n : ℕ => (1 / (θ α * (t / 2)) * |x|^2)^n /
-          (n.factorial: ℝ)) := by exact Real.summable_pow_div_factorial _
+          ((n)!: ℝ)) := by exact Real.summable_pow_div_factorial _
         convert h_summable.div_const (θ α * (t / 2)) using 2; ring!
       let s : Set ℝ := Set.Ioi (t / 2)
       have hs : IsOpen s := isOpen_Ioi
@@ -960,26 +1054,68 @@ theorem isClassical1DHeatSolution_u {α : ℝ} (hα : 1 < α) :
       have h't : t ∈ s := by
         suffices t / 2 < t by simp [s, Set.mem_Ioi, this]
         linarith
+      have hss : s ⊆ Set.Ioi 0 := by
+        simp only [Set.Ioi_subset_Ioi_iff, s]
+        linarith
       refine hasDerivAt_tsum_of_isPreconnected
-        (g := fun (i : ℕ) (t : ℝ) => iteratedDeriv i (g α) t * (↑(2 * i).factorial)⁻¹ * x ^ (2 * i))
+        (g := fun (i : ℕ) (t : ℝ) => iteratedDeriv i (g α) t * (↑(2 * i)!)⁻¹ * x ^ (2 * i))
         (g' := g') (𝕜 := ℝ) (F := ℝ) hv hs h's ?_ ?_ h't ?_ h't
       · intro n y hy; simp only [g']
-        simp only [mul_assoc, ← mul_comm (((2 * n).factorial : ℝ)⁻¹ * x ^ (2 * n))]
+        simp only [mul_assoc, ← mul_comm (((2 * n)! : ℝ)⁻¹ * x ^ (2 * n))]
         rw [← deriv_const_mul_field, ← deriv_const_mul_field, hasDerivAt_deriv_iff]
         simp [← mul_assoc]
-        refine DifferentiableAt.const_mul ?_ (((2 * n).factorial : ℝ)⁻¹ * x ^ (2 * n))
+        refine DifferentiableAt.const_mul ?_ (((2 * n)! : ℝ)⁻¹ * x ^ (2 * n))
         refine DifferentiableOn.differentiableAt (s := Set.Ioi 0) ?_ ?_
         · exact (iteratedDeriv_restrict_eq n (cgDiff α) (cg_eq_g α)).2
-        · refine IsOpen.mem_nhds isOpen_Ioi ?_
-          suffices s ⊆ Set.Ioi 0 from this hy
-          simp only [Set.Ioi_subset_Ioi_iff, s]
-          linarith
-      · sorry
+        · exact IsOpen.mem_nhds isOpen_Ioi (hss hy)
+      · intro n y hy
+        simp only [norm_mul, Real.norm_eq_abs, norm_inv, RCLike.norm_natCast, norm_pow, g', v,
+          ← iteratedDeriv_succ]
+        have h (r : ℝ) (hr : 0 < r) : 0 ≤ 1 / (θ α * r) * |x| ^ 2 :=
+          mul_nonneg (one_div_nonneg.2 (le_of_lt (mul_pos (θpos hα) hr))) (by positivity)
+        have hh (r : ℝ) (hr : 0 < r): 0 ≤ (1 / (θ α * r) * |x| ^ 2) ^ n := by
+          exact pow_nonneg (h r hr) n
+        calc
+        |iteratedDeriv (n + 1) (g α) y| * (↑(2 * n)!)⁻¹ * |x| ^ (2 * n) ≤
+          (n + 1)! * rexp (- y ^ (- α) / 2) / (θ α * y) ^ (n + 1) *
+          (↑(2 * n)!)⁻¹ * |x| ^ (2 * n) := by
+            gcongr; exact CauchyEstimate_of_g hα (hss hy) (n + 1)
+          _ ≤ rexp (- y ^ (- α) / 2) * ((n)! : ℝ)⁻¹ * (1 / (θ α * y) * |x|^2) ^ n
+            / (θ α * y) := by
+            field_simp; rw [mul_comm, ← mul_assoc, mul_div_assoc, mul_div_assoc]
+            refine mul_le_mul (lem_fac' n) ?_ ?_ ?_
+            · ring_nf; exact le_refl _
+            · refine div_nonneg (by positivity) ?_
+              refine pow_nonneg ?_ (n + 1)
+              exact le_of_lt (mul_pos (θpos hα) (hss hy))
+            · positivity
+          _ ≤ ((n)! : ℝ)⁻¹ * (1 / (θ α * y) * |x|^2) ^ n / (θ α * y) := by
+            gcongr
+            · exact le_of_lt (mul_pos (θpos hα) (hss hy))
+            · exact hh y (hss hy)
+            · rw [← one_mul ((n)! : ℝ)⁻¹]; gcongr
+              · simp only [Real.exp_le_one_iff]
+                suffices 0 ≤ y ^ (-α) / 2 from by linarith
+                exact div_nonneg (Real.rpow_nonneg (le_of_lt (hss hy)) (-α)) (by positivity)
+              · simp
+          _ ≤ ((n)! : ℝ)⁻¹ * (1 / (θ α * (t / 2)) * |x|^2) ^ n / (θ α * (t / 2)) := by
+            rw [mul_div_assoc, mul_div_assoc]
+            refine mul_le_mul_of_nonneg_left (a := ((n)! : ℝ)⁻¹) ?_ (by positivity)
+            gcongr
+            · exact hh (t / 2) (by linarith)
+            · exact mul_pos (θpos hα) (by linarith)
+            · exact h y (hss hy)
+            · exact mul_pos (θpos hα) (by linarith)
+            · exact le_of_lt (θpos hα)
+            · exact hy.le
+            · exact le_of_lt (θpos hα)
+            · exact hy.le
       · exact summable_u x ht hα
     · exact isOpen_Ioi
     · simp [ht]
   · constructor
-    · intro t ht; sorry
+    · intro t ht
+      sorry
     · intro x hx t ht
       rw [laplacian_eq_iteratedDeriv_real, deriv_u_t ht hα , deriv2_u_x ht hα]
       ring
