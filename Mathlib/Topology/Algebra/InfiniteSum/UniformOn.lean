@@ -110,12 +110,14 @@ theorem MultipliableUniformlyOn.multipliable (h : MultipliableUniformlyOn f 𝔖
   match h.exists with | ⟨_, hg⟩ => (hg.hasProd hs hx).multipliable
 
 @[to_additive]
-theorem MultipliableUniformlyOn.hasProdUniformlyOn [T2Space α] (h : MultipliableUniformlyOn f 𝔖) :
+theorem MultipliableUniformlyOn.hasProdUniformlyOn (h : MultipliableUniformlyOn f 𝔖) :
     HasProdUniformlyOn f (∏' i, f i ·) 𝔖 := by
   obtain ⟨g, hg⟩ := h.exists
-  simp only [hasProdUniformlyOn_iff_tendstoUniformlyOn]
-  intro s hs
-  exact (hasProdUniformlyOn_iff_tendstoUniformlyOn.mp hg s hs).congr_right (hg.tprod_eqOn hs).symm
+  have hp := hg
+  rw [hasProdUniformlyOn_iff_tendstoUniformlyOn] at hg ⊢
+  refine forall₂_imp (fun s hs hg => ?_) hg
+  exact hg.congr_inseparable_right fun x hx =>
+    tendsto_nhds_unique_inseparable (hp.hasProd hs hx) (hp.hasProd hs hx).multipliable.hasProd
 
 end UniformlyOn
 
@@ -189,7 +191,7 @@ converse is only true if the domain is locally compact. -/
 @[to_additive /-- If every `x ∈ s` has a neighbourhood within `s` on which `b ↦ ∑' i, f i b`
 converges uniformly, then the sum converges locally uniformly. Note that this is not a tautology,
 and the converse is only true if the domain is locally compact. -/]
-lemma multipliableLocallyUniformlyOn_of_of_forall_exists_nhds [T2Space α]
+lemma multipliableLocallyUniformlyOn_of_of_forall_exists_nhds
     (h : ∀ x ∈ s, ∃ t ∈ 𝓝[s] x, MultipliableUniformlyOn f {t}) :
     MultipliableLocallyUniformlyOn f s :=
   (hasProdLocallyUniformlyOn_of_of_forall_exists_nhds <| fun x hx ↦ match h x hx with
