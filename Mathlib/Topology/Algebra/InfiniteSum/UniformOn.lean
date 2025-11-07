@@ -3,7 +3,10 @@ Copyright (c) 2025 Chris Birkbeck. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chris Birkbeck, David Loeffler
 -/
-import Mathlib
+import Mathlib.Topology.Algebra.InfiniteSum.Defs
+import Mathlib.Topology.Algebra.UniformConvergence
+import Mathlib.Order.Filter.AtTopBot.Finset
+import Mathlib.Topology.Algebra.InfiniteSum.NatInt
 
 /-!
 # Infinite sum and products that converge uniformly on a set
@@ -115,38 +118,13 @@ theorem MultipliableUniformlyOn.hasProdUniformlyOn [T2Space α] (h : Multipliabl
   intro s hs
   exact (hasProdUniformlyOn_iff_tendstoUniformlyOn.mp hg s hs).congr_right (hg.tprod_eqOn hs).symm
 
-open scoped UniformConvergence in
-@[to_additive]
-instance [ContinuousMul α] : ContinuousMul (β →ᵤ[𝔖] α) where
-  continuous_mul := by
-    apply UniformFun
+variable {α : Type*} [CommGroup α] [UniformSpace α] [IsUniformGroup α] {f : ℕ → β → α}
+  {g : β → α}
 
 @[to_additive]
-theorem prod_range_mul [ContinuousMul α] {f : ℕ → β → α} (k : ℕ)
-    (h : HasProdUniformlyOn (fun (n : ℕ) => f (n + k)) g 𝔖) :
-    HasProdUniformlyOn f ((∏ i ∈ Finset.range k, f i) * g) 𝔖 := by
-  exact HasProd.prod_range_mul h
-
-theorem UniformOnFun.ofFun_comm {α : Type u_1} {β : Type u_2} (𝔖 : Set (Set α)) (f : ℕ → α → β)
-    (k : ℕ) : ∀ i, UniformOnFun.ofFun 𝔖 ((fun n : ℕ => f (n + k)) i) =
-    (fun n => UniformOnFun.ofFun 𝔖 (f n)) (i + k) := by
-  intro i
-  simp
-
-open Real in
-theorem HasSumUniformlyOn_iff_tailsumHasSumUniformlyOn
-    (f : ℕ → ℝ → ℝ) (s : Set ℝ) (k : ℕ) (g : ℝ → ℝ) :
-    HasSumUniformlyOn f (g + ∑ i ∈ Finset.range k, f i) {s} ↔
-    HasSumUniformlyOn (fun n ↦ f (n + k)) g {s} := by
-  unfold HasSumUniformlyOn
-  constructor
-  · intro h
-    refine HasSum.congr_fun ?_ (UniformOnFun.ofFun_comm {s} f k)
-    rw [hasSum_nat_add_iff (f := fun n ↦ (UniformOnFun.ofFun {s}) (f n))
-      (G := UniformOnFun ℝ ℝ {s}) k]
-    simp only [← UniformOnFun.ofFun_sum, ← UniformOnFun.ofFun_add]
-    exact h
-  · sorry
+theorem hasProdUniformlyOn_nat_add_iff (k : ℕ) : HasProdUniformlyOn (fun n ↦ f (n + k)) g 𝔖
+    ↔ HasProdUniformlyOn f (g * ∏ i ∈ Finset.range k, f i) 𝔖 := by
+  exact hasProd_nat_add_iff k
 
 end UniformlyOn
 
