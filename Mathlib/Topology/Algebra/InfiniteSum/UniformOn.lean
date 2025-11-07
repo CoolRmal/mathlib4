@@ -6,6 +6,7 @@ Authors: Chris Birkbeck, David Loeffler
 import Mathlib.Topology.Algebra.InfiniteSum.Defs
 import Mathlib.Topology.Algebra.UniformConvergence
 import Mathlib.Order.Filter.AtTopBot.Finset
+import Mathlib.Topology.Algebra.InfiniteSum.NatInt
 
 /-!
 # Infinite sum and products that converge uniformly on a set
@@ -118,8 +119,6 @@ theorem MultipliableUniformlyOn.hasProdUniformlyOn [T2Space α] (h : Multipliabl
   intro s hs
   exact (hasProdUniformlyOn_iff_tendstoUniformlyOn.mp hg s hs).congr_right (hg.tprod_eqOn hs).symm
 
-<<<<<<< Updated upstream
-=======
 variable {α : Type*} [CommGroup α] [UniformSpace α] [IsUniformGroup α] {f : ℕ → β → α}
   {g : β → α}
 
@@ -135,13 +134,6 @@ theorem MultipliableUniformlyOn.prod_mul_tprod_nat_add (k : ℕ) (h : Multipliab
   have : T2Space (UniformOnFun β α 𝔖) := UniformOnFun.t2Space_of_covering g
   exact Multipliable.prod_mul_tprod_nat_add k h
 
-/-- The infinite product of `f` in the topology of `UniformOnFun β α 𝔖` is equal to the
-the infinite product of `f` in the topology of pointwise convergence. -/
-theorem tprod_eq_pi_tprod (h : MultipliableUniformlyOn f 𝔖) :
-    tprod f (α := UniformOnFun β α 𝔖) = UniformOnFun.ofFun 𝔖 (∏' i, f i) := by
-  sorry
-
->>>>>>> Stashed changes
 end UniformlyOn
 
 section LocallyUniformlyOn
