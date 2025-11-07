@@ -44,7 +44,8 @@ variable (f g 𝔖) in
 /-- `MultipliableUniformlyOn f 𝔖` means that there is some infinite product to which
 `f` converges uniformly on every `s ∈ 𝔖`. Use `fun x ↦ ∏' i, f i x` to get the product function. -/
 @[to_additive /-- `SummableUniformlyOn f s` means that there is some infinite sum to
-which `f` converges uniformly on every `s ∈ 𝔖`. Use fun x ↦ ∑' i, f i x to get the sum function. -/]
+which `f` converges uniformly on every `s ∈ 𝔖`. Use `fun x ↦ ∑' i, f i x` to get the sum
+function. -/]
 def MultipliableUniformlyOn : Prop :=
   Multipliable (fun i ↦ UniformOnFun.ofFun 𝔖 (f i))
 
@@ -117,6 +118,30 @@ theorem MultipliableUniformlyOn.hasProdUniformlyOn [T2Space α] (h : Multipliabl
   intro s hs
   exact (hasProdUniformlyOn_iff_tendstoUniformlyOn.mp hg s hs).congr_right (hg.tprod_eqOn hs).symm
 
+<<<<<<< Updated upstream
+=======
+variable {α : Type*} [CommGroup α] [UniformSpace α] [IsUniformGroup α] {f : ℕ → β → α}
+  {g : β → α}
+
+@[to_additive]
+theorem hasProdUniformlyOn_nat_add_iff (k : ℕ) : HasProdUniformlyOn (fun n ↦ f (n + k)) g 𝔖
+    ↔ HasProdUniformlyOn f (g * ∏ i ∈ Finset.range k, f i) 𝔖 := by
+  exact hasProd_nat_add_iff k
+
+@[to_additive]
+theorem MultipliableUniformlyOn.prod_mul_tprod_nat_add (k : ℕ) (h : MultipliableUniformlyOn f 𝔖)
+    (g : ⋃₀ 𝔖 = Set.univ) [T2Space α] : (∏ i ∈ Finset.range k, f i : UniformOnFun β α 𝔖) *
+    tprod (fun i => f (i + k)) (α := UniformOnFun β α 𝔖) = tprod f (α := UniformOnFun β α 𝔖) := by
+  have : T2Space (UniformOnFun β α 𝔖) := UniformOnFun.t2Space_of_covering g
+  exact Multipliable.prod_mul_tprod_nat_add k h
+
+/-- The infinite product of `f` in the topology of `UniformOnFun β α 𝔖` is equal to the
+the infinite product of `f` in the topology of pointwise convergence. -/
+theorem tprod_eq_pi_tprod (h : MultipliableUniformlyOn f 𝔖) :
+    tprod f (α := UniformOnFun β α 𝔖) = UniformOnFun.ofFun 𝔖 (∏' i, f i) := by
+  sorry
+
+>>>>>>> Stashed changes
 end UniformlyOn
 
 section LocallyUniformlyOn
