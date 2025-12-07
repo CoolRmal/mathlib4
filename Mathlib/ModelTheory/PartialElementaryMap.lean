@@ -5,11 +5,7 @@ Authors: Yongxi Lin
 -/
 module
 
-public import Mathlib.Data.Fintype.Basic
-public import Mathlib.ModelTheory.Substructures
-public import Mathlib.ModelTheory.ElementaryMaps
 public import Mathlib.ModelTheory.Types
-public import Mathlib.ModelTheory.Bundled
 
 /-!
 # Elementary Maps Between First-Order Structures
@@ -38,24 +34,46 @@ namespace Language
 
 open Structure Theory CategoryTheory
 
-variable (L : Language.{u, v}) {T : L.Theory} {α : Type w} {n : ℕ}
-variable (M : Type w) [L.Structure M] (N : Type w) [L.Structure N]
+variable (L : Language.{u, v}) {T : L.Theory} {n : ℕ}
+variable (M : Type w) [L.Structure M] (N : Type w') [L.Structure N]
 
-def IsPartialElementaryMap (B : Set M) (f : M → N) : Prop :=
-    ∀ ⦃n⦄ (φ : L.Formula (Fin n)) (x : Fin n → M), (∀ i, x i ∈ B) →
-      (φ.Realize (f ∘ x) ↔ φ.Realize x)
+def IsPartialElementaryMap {B : Set M} (f : B → N) : Prop :=
+    ∀ ⦃n⦄ (φ : L.Formula (Fin n)) (x : Fin n → B), (φ.Realize (f ∘ x) ↔ φ.Realize (Subtype.val ∘ x))
 
-/-- An elementary embedding is also a partial elementary map defined on the entire set. -/
-def toPartialElementaryMap (f : M ↪ₑ[L] N) : IsPartialElementaryMap L M N (Set.univ : Set M) f :=
-  fun _ φ x _ => f.map_formula' φ x
-
-lemma extendPartial {B : Set M} {f : M → N} (hf : IsPartialElementaryMap L M N B f) (m : M) :
-    ∃ (N' : Bundled L.Structure) (i : N ↪ₑ[L] N') (g : M → N'),
-      IsPartialElementaryMap L M N' (B ∪ {m}) g ∧ ∀ b ∈ B, i (f b) = g b := by
+lemma extendPartial {B : Set M} {f : B → N} (hf : IsPartialElementaryMap L M N f) (m : M) :
+    ∃ (N' : Type (max (max (max u w) w') v)) (hN' : L.Structure N') (i : N ↪ₑ[L] N')
+      (g : ↑(B ∪ {m}) → N'), IsPartialElementaryMap L M N' g ∧
+      ∀ b : B, i (f b) = g ⟨b, Or.inl b.2⟩ := by
   by_cases hm : m ∈ B
-  · use Bundled.of N, by rfl, f
-    simpa [Bundled.of, Set.union_singleton, Set.insert_eq_of_mem hm]
-  · sorry
+  · -- Equiv.inducedStructureEquiv
+    sorry
+  · let S := ↑({m} : Set M)
+    let LmN := ((L.lhomWithConstants S).addConstants N).comp (L.lhomWithConstants N)
+    let Γ := (L[[S]].lhomWithConstantsMap f).onTheory (L[[S]][[B]].completeTheory M) ∪
+      ((L.lhomWithConstants S).addConstants N).onTheory (L.elementaryDiagram N)
+    suffices hΓ : IsSatisfiable Γ from by
+      obtain N' := Classical.choice hΓ
+      let LSN' := (((L.lhomWithConstants S).addConstants N).comp
+        (L.lhomWithConstants N)).reduct N'
+      let := ((L.lhomWithConstants S).addConstants N).reduct N'
+      have : N' ⊨ L.elementaryDiagram N := (ModelType.subtheoryModel N'
+        Set.subset_union_right).reduct.is_model
+      let e := ElementaryEmbedding.ofModelsElementaryDiagram L N N'
+      let LSB := (L[[S]].lhomWithConstantsMap f).reduct N'
+      have : N' ⊨ (L[[↑S]][[↑B]].completeTheory M) := (ModelType.subtheoryModel N'
+        Set.subset_union_left).reduct.is_model
+      let c := LSB.funMap ((L[[S]].lhomWithConstants B).onFunction (L.con
+        (⟨m, Set.mem_singleton_iff.mpr rfl⟩ : S))) fun x => nomatch x
+      classical
+      let g : ↑(B ∪ {m}) → N' := fun a => if h : a.1 ∈ B then e (f ⟨a.1, h⟩) else c
+      refine ⟨N', LSN', e, ⟨g, fun n φ x => ⟨fun p => ?_, fun q => ?_⟩, by grind⟩⟩
+      · sorry
+      · sorry
+    refine isSatisfiable_iff_isFinitelySatisfiable.mpr fun T0 hT0 => Nonempty.intro ?_
+    have : L[[S]][[N]].Structure N := sorry
+    have : N ⊨ SetLike.coe T0 := by sorry
+    have : Nonempty N := by sorry
+    sorry
 
 theorem automorphism [Nonempty M] {n : ℕ} (a c : Fin n → M) (B : Set M)
     (hab : typeOf (L[[B]].completeTheory M) a = typeOf (L[[B]].completeTheory M) c) :
