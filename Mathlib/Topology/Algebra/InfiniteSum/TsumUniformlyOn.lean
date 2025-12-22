@@ -65,11 +65,22 @@ lemma SummableLocallyUniformlyOn_of_locally_bounded [TopologicalSpace β] [Local
 end UniformlyOn
 
 variable {ι 𝕜 F : Type*} [NontriviallyNormedField 𝕜] [IsRCLikeNormedField 𝕜]
-    [NormedAddCommGroup F] [NormedSpace 𝕜 F] {s : Set 𝕜}
+    [NormedAddCommGroup F] [NormedSpace 𝕜 F] {s : Set 𝕜} {f : ι → 𝕜 → F} {x : 𝕜}
+
+/-- If a sequence of functions `fₙ` is such that `∑ fₙ z` is summable for each `z` in `s ∈ 𝓝 x`,
+and `∑ fderivWithin 𝕜 fₙ s` is summable locally uniformly on `s`, and each `fₙ` is
+differentiable, then `∑ fₙ` has `∑ (fderivWithin 𝕜 fₙ s)` as derivative at `x`. -/
+theorem SummableLocallyUniformlyOn.hasDerivWithinAt_tsum (hs : s ∈ 𝓝 x)
+    (hf : ∀ y ∈ s, Summable fun n ↦ f n y)
+    (h : SummableLocallyUniformlyOn (fun n ↦ (derivWithin (f n) s)) s)
+    (hf2 : ∀ n r, r ∈ s → DifferentiableAt 𝕜 (f n) r) :
+    HasDerivWithinAt (fun z => ∑' (n : ι), f n z) (∑' (n : ι), derivWithin (f n) s x) s x := by
+  apply hasDerivAt_of_tendstoLocallyUniformlyOn hs _ _ (fun y hy ↦ (hf y hy).hasSum) hx
+    (f' := fun n : Finset ι ↦ fun a ↦ ∑ i ∈ n, derivWithin (fun z ↦ f i z) s a)
 
 /-- The `derivWithin` of a sum whose derivative is absolutely and uniformly convergent sum on an
 open set `s` is the sum of the derivatives of sequence of functions on the open set `s` -/
-theorem derivWithin_tsum {f : ι → 𝕜 → F} (hs : IsOpen s) {x : 𝕜} (hx : x ∈ s)
+theorem derivWithin_tsum {f : ι → 𝕜 → F} {x : 𝕜} (hs : s ∈ 𝓝 x)
     (hf : ∀ y ∈ s, Summable fun n ↦ f n y)
     (h : SummableLocallyUniformlyOn (fun n ↦ (derivWithin (fun z ↦ f n z) s)) s)
     (hf2 : ∀ n r, r ∈ s → DifferentiableAt 𝕜 (f n) r) :

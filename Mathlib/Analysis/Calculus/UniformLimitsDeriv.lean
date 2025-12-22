@@ -306,10 +306,10 @@ In words the assumptions mean the following:
   * `hf`: For all `(y, n)` with `y` sufficiently close to `x` and `n` sufficiently large, `f' n` is
     the derivative of `f n`
   * `hfg`: The `f n` converge pointwise to `g` on a neighborhood of `x` -/
-theorem hasFDerivAt_of_tendstoUniformlyOnFilter [NeBot l]
-    (hf' : TendstoUniformlyOnFilter f' g' l (𝓝 x))
-    (hf : ∀ᶠ n : ι × E in l ×ˢ 𝓝 x, HasFDerivAt (f n.1) (f' n.1 n.2) n.2)
-    (hfg : ∀ᶠ y in 𝓝 x, Tendsto (fun n => f n y) l (𝓝 (g y))) : HasFDerivAt g (g' x) x := by
+theorem hasFDerivAt_of_tendstoUniformlyOnFilter {s : Set E} [NeBot l]
+    (hf' : TendstoUniformlyOnFilter f' g' l (𝓝[s] x))
+    (hf : ∀ᶠ n : ι × E in l ×ˢ 𝓝 x, HasFDerivWithinAt (f n.1) (f' n.1 n.2) s n.2)
+    (hfg : ∀ᶠ y in 𝓝 x, Tendsto (fun n => f n y) l (𝓝 (g y))) : HasFDerivWithinAt g (g' x) s x := by
   letI : RCLike 𝕜 := IsRCLikeNormedField.rclike 𝕜
   -- The proof strategy follows several steps:
   --   1. The quantifiers in the definition of the derivative are
@@ -318,7 +318,7 @@ theorem hasFDerivAt_of_tendstoUniformlyOnFilter [NeBot l]
   --      `f(') n`
   --   2. The order of the quantifiers `hfg` are opposite to what we need. We will be able to swap
   --      the quantifiers using the uniform convergence assumption
-  rw [hasFDerivAt_iff_tendsto]
+  rw [hasFDerivWithinAt_iff_tendsto]
   -- Introduce extra quantifier via curried filters
   suffices
     Tendsto (fun y : ι × E => ‖y.2 - x‖⁻¹ * ‖g y.2 - g x - (g' x) (y.2 - x)‖)
@@ -521,7 +521,7 @@ theorem hasDerivAt_of_tendstoUniformlyOnFilter [NeBot l]
 theorem hasDerivAt_of_tendstoLocallyUniformlyOn [NeBot l] {s : Set 𝕜} (hs : s ∈ 𝓝 x)
     (hf' : TendstoLocallyUniformlyOn f' g' l s)
     (hf : ∀ᶠ n in l, ∀ x ∈ s, HasDerivAt (f n) (f' n x) x)
-    (hfg : ∀ x ∈ s, Tendsto (fun n => f n x) l (𝓝 (g x))) : HasDerivAt g (g' x) x := by
+    (hfg : ∀ x ∈ s, Tendsto (fun n => f n x) l (𝓝 (g x))) : HasDerivWithinAt g (g' x) s x := by
   have h2 : ∀ᶠ n : ι × 𝕜 in l ×ˢ 𝓝 x, HasDerivAt (f n.1) (f' n.1 n.2) n.2 :=
     eventually_prod_iff.2 ⟨_, hf, fun x => x ∈ s, hs, fun {n} => id⟩
   refine hasDerivAt_of_tendstoUniformlyOnFilter ?_ h2 (eventually_of_mem hs hfg)
@@ -534,7 +534,7 @@ analysis where holomorphicity is assumed but the derivative is not known a prior
 theorem hasDerivAt_of_tendsto_locally_uniformly_on' [NeBot l] {s : Set 𝕜} (hs : s ∈ 𝓝 x)
     (hf' : TendstoLocallyUniformlyOn (deriv ∘ f) g' l s)
     (hf : ∀ᶠ n in l, DifferentiableOn 𝕜 (f n) s)
-    (hfg : ∀ x ∈ s, Tendsto (fun n => f n x) l (𝓝 (g x))) : HasDerivAt g (g' x) x := by
+    (hfg : ∀ x ∈ s, Tendsto (fun n => f n x) l (𝓝 (g x))) : HasDerivWithinAt g (g' x) s x := by
   obtain ⟨t, ht1, ht2, ht3⟩ := mem_nhds_iff.mp hs
   refine hasDerivAt_of_tendstoLocallyUniformlyOn (ht2.mem_nhds ht3) (hf'.mono ht1) (f := f) ?_ ?_
   · filter_upwards [hf] with n h z hz using ((h.mono ht1 z hz).differentiableAt
