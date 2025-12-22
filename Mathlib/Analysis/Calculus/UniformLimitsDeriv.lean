@@ -518,15 +518,15 @@ theorem hasDerivAt_of_tendstoUniformlyOnFilter [NeBot l]
     gcongr
   exact hasFDerivAt_of_tendstoUniformlyOnFilter hf' hf hfg
 
-theorem hasDerivAt_of_tendstoLocallyUniformlyOn [NeBot l] {s : Set 𝕜} (hs : IsOpen s)
+theorem hasDerivAt_of_tendstoLocallyUniformlyOn [NeBot l] {s : Set 𝕜} (hs : s ∈ 𝓝 x)
     (hf' : TendstoLocallyUniformlyOn f' g' l s)
     (hf : ∀ᶠ n in l, ∀ x ∈ s, HasDerivAt (f n) (f' n x) x)
-    (hfg : ∀ x ∈ s, Tendsto (fun n => f n x) l (𝓝 (g x))) (hx : x ∈ s) : HasDerivAt g (g' x) x := by
-  have h1 : s ∈ 𝓝 x := hs.mem_nhds hx
+    (hfg : ∀ x ∈ s, Tendsto (fun n => f n x) l (𝓝 (g x))) : HasDerivAt g (g' x) x := by
   have h2 : ∀ᶠ n : ι × 𝕜 in l ×ˢ 𝓝 x, HasDerivAt (f n.1) (f' n.1 n.2) n.2 :=
-    eventually_prod_iff.2 ⟨_, hf, fun x => x ∈ s, h1, fun {n} => id⟩
-  refine hasDerivAt_of_tendstoUniformlyOnFilter ?_ h2 (eventually_of_mem h1 hfg)
-  simpa [IsOpen.nhdsWithin_eq hs hx] using tendstoLocallyUniformlyOn_iff_filter.mp hf' x hx
+    eventually_prod_iff.2 ⟨_, hf, fun x => x ∈ s, hs, fun {n} => id⟩
+  refine hasDerivAt_of_tendstoUniformlyOnFilter ?_ h2 (eventually_of_mem hs hfg)
+  simpa [nhdsWithin_eq_nhds.mpr hs] using tendstoLocallyUniformlyOn_iff_filter.mp hf' x
+    (mem_of_mem_nhds hs)
 
 /-- A slight variant of `hasDerivAt_of_tendstoLocallyUniformlyOn` with the assumption stated in
 terms of `DifferentiableOn` rather than `HasDerivAt`. This makes a few proofs nicer in complex
