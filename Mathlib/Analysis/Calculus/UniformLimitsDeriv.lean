@@ -531,19 +531,22 @@ theorem hasDerivAt_of_tendstoLocallyUniformlyOn [NeBot l] {s : Set 𝕜} (hs : s
 /-- A slight variant of `hasDerivAt_of_tendstoLocallyUniformlyOn` with the assumption stated in
 terms of `DifferentiableOn` rather than `HasDerivAt`. This makes a few proofs nicer in complex
 analysis where holomorphicity is assumed but the derivative is not known a priori. -/
-theorem hasDerivAt_of_tendsto_locally_uniformly_on' [NeBot l] {s : Set 𝕜} (hs : IsOpen s)
+theorem hasDerivAt_of_tendsto_locally_uniformly_on' [NeBot l] {s : Set 𝕜} (hs : s ∈ 𝓝 x)
     (hf' : TendstoLocallyUniformlyOn (deriv ∘ f) g' l s)
     (hf : ∀ᶠ n in l, DifferentiableOn 𝕜 (f n) s)
-    (hfg : ∀ x ∈ s, Tendsto (fun n => f n x) l (𝓝 (g x))) (hx : x ∈ s) : HasDerivAt g (g' x) x := by
-  refine hasDerivAt_of_tendstoLocallyUniformlyOn hs hf' ?_ hfg hx
-  filter_upwards [hf] with n h z hz using ((h z hz).differentiableAt (hs.mem_nhds hz)).hasDerivAt
+    (hfg : ∀ x ∈ s, Tendsto (fun n => f n x) l (𝓝 (g x))) : HasDerivAt g (g' x) x := by
+  obtain ⟨t, ht1, ht2, ht3⟩ := mem_nhds_iff.mp hs
+  refine hasDerivAt_of_tendstoLocallyUniformlyOn (ht2.mem_nhds ht3) (hf'.mono ht1) (f := f) ?_ ?_
+  · filter_upwards [hf] with n h z hz using ((h.mono ht1 z hz).differentiableAt
+    (ht2.mem_nhds hz)).hasDerivAt
+  · exact fun z hz => hfg z (ht1 hz)
 
-theorem hasDerivAt_of_tendstoUniformlyOn [NeBot l] {s : Set 𝕜} (hs : IsOpen s)
+theorem hasDerivAt_of_tendstoUniformlyOn [NeBot l] {s : Set 𝕜} (hs : s ∈ 𝓝 x)
     (hf' : TendstoUniformlyOn f' g' l s)
     (hf : ∀ᶠ n in l, ∀ x : 𝕜, x ∈ s → HasDerivAt (f n) (f' n x) x)
-    (hfg : ∀ x : 𝕜, x ∈ s → Tendsto (fun n => f n x) l (𝓝 (g x))) (hx : x ∈ s) :
+    (hfg : ∀ x : 𝕜, x ∈ s → Tendsto (fun n => f n x) l (𝓝 (g x))) :
     HasDerivAt g (g' x) x :=
-  hasDerivAt_of_tendstoLocallyUniformlyOn hs hf'.tendstoLocallyUniformlyOn hf hfg hx
+  hasDerivAt_of_tendstoLocallyUniformlyOn hs hf'.tendstoLocallyUniformlyOn hf hfg
 
 theorem hasDerivAt_of_tendstoUniformly [NeBot l] (hf' : TendstoUniformly f' g' l)
     (hf : ∀ᶠ n in l, ∀ x : 𝕜, HasDerivAt (f n) (f' n x) x)
@@ -552,6 +555,6 @@ theorem hasDerivAt_of_tendstoUniformly [NeBot l] (hf' : TendstoUniformly f' g' l
     filter_upwards [hf] with n h x _ using h x
   have hfg : ∀ x : 𝕜, x ∈ Set.univ → Tendsto (fun n => f n x) l (𝓝 (g x)) := by simp [hfg]
   have hf' : TendstoUniformlyOn f' g' l Set.univ := by rwa [tendstoUniformlyOn_univ]
-  exact hasDerivAt_of_tendstoUniformlyOn isOpen_univ hf' hf hfg (Set.mem_univ x)
+  exact hasDerivAt_of_tendstoUniformlyOn univ_mem hf' hf hfg
 
 end deriv
