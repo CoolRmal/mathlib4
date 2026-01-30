@@ -781,7 +781,7 @@ protected theorem _root_.IndexedPartition.stronglyMeasurable_piecewise {s : ι �
   obtain ⟨e, -⟩ := exists_true_iff_nonempty.mpr (nonempty_equiv_of_countable (α := ℕ) (β := ι))
   have he := e.bijective
   classical
-  let g (n : ℕ) : ι → Fin (n + 1) := fun i =>
+  let g (n : ℕ) (i : ι) : Fin (n + 1) :=
     if hi : ∃ m < n, i = e m then ⟨hi.choose, by grind⟩ else Fin.last n
   have sg (n : ℕ) : (g n).Surjective := by
     intro b
