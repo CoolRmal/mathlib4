@@ -467,7 +467,7 @@ theorem piecewise_bij {t : ι → Set β} (ht : IndexedPartition t)
     Bijective (piecewise hs f) := by
   set g := piecewise hs f with hg
   have hg_bij (i) : BijOn g (s i) (t i) := by
-    refine BijOn.congr (hf i) fun x hx => ?_
+    refine (hf i).congr fun x hx => ?_
     rw [hg, piecewise_apply, hs.mem_iff_index_eq.mp hx]
   have hg_inj : InjOn g (⋃ i, s i) := by
     refine injOn_of_injective (piecewise_inj hs (fun i ↦ BijOn.injOn (hf i)) ?_)
