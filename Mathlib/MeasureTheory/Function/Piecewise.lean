@@ -31,7 +31,7 @@ protected theorem measurable_piecewise [MeasurableSpace β] [Countable ι]
   fun t ht => by simpa [piecewise_preimage] using .iUnion (fun i => (hms i).inter ((hmf i) ht))
 
 /-- This is the analogue of `SimpleFunc.piecewise` for `IndexedPartition`. -/
-def simple_func [Finite ι] (hs : IndexedPartition s)
+def simpleFunc_piecewise [Finite ι] (hs : IndexedPartition s)
     (hms : ∀ i, MeasurableSet (s i)) (f : ι → SimpleFunc α β) : SimpleFunc α β where
   toFun := hs.piecewise (fun i => f i)
   measurableSet_fiber' := fun _ =>
@@ -45,8 +45,8 @@ theorem stronglyMeasurable_piecewise [Countable ι] (hs : IndexedPartition s)
     (hm : ∀ i, MeasurableSet (s i)) [TopologicalSpace β] (hf : ∀ i, StronglyMeasurable (f i)) :
     StronglyMeasurable (hs.piecewise f) := by
   by_cases Fi : Finite ι
-  · refine ⟨fun n => simple_func hs hm (fun i => (hf i).approx n), fun x => ?_⟩
-    simp [simple_func, piecewise_apply, StronglyMeasurable.tendsto_approx]
+  · refine ⟨fun n => simpleFunc_piecewise hs hm (fun i => (hf i).approx n), fun x => ?_⟩
+    simp [simpleFunc_piecewise, piecewise_apply, StronglyMeasurable.tendsto_approx]
   simp only [not_finite_iff_infinite] at Fi
   obtain ⟨e, -⟩ := exists_true_iff_nonempty.mpr (nonempty_equiv_of_countable (α := ℕ) (β := ι))
   have he := e.bijective
