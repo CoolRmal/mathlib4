@@ -6,7 +6,7 @@ Authors: Yongxi Lin
 module
 
 public import Mathlib.Data.Setoid.Partition
-public import Mathlib.MeasureTheory.Function.StronglyMeasurable.Basic
+public import Mathlib.MeasureTheory.Function.StronglyMeasurable.AEStronglyMeasurable
 
 /-!
 # Measurability of piecewise functions
@@ -26,17 +26,25 @@ variable {ι α β : Type*} [MeasurableSpace α] {s : ι → Set α} {f : ι →
 
 @[measurability, fun_prop]
 protected theorem measurable_piecewise [MeasurableSpace β] [Countable ι]
-    (hs : IndexedPartition s) (hms : ∀ i, MeasurableSet (s i)) (hmf : ∀ i, Measurable (f i)) :
+    (hs : IndexedPartition s) (hm : ∀ i, MeasurableSet (s i)) (hf : ∀ i, Measurable (f i)) :
     Measurable (hs.piecewise f) :=
-  fun t ht => by simpa [piecewise_preimage] using .iUnion (fun i => (hms i).inter ((hmf i) ht))
+  fun t ht => by simpa [piecewise_preimage] using .iUnion (fun i => (hm i).inter ((hf i) ht))
+
+@[measurability, fun_prop]
+theorem aemeasurable_piecewise {μ : Measure α} [MeasurableSpace β] [Countable ι]
+    (hs : IndexedPartition s) (hm : ∀ i, MeasurableSet (s i)) (hf : ∀ i, AEMeasurable (f i) μ) :
+    AEMeasurable (hs.piecewise f) μ := by
+  choose p hp hq using hf
+  refine ⟨hs.piecewise p, hs.measurable_piecewise hm hp, ?_⟩
+  filter_upwards [ae_all_iff.2 hq] with x hx using hx (hs.index x)
 
 /-- This is the analogue of `SimpleFunc.piecewise` for `IndexedPartition`. -/
 def simpleFunc_piecewise [Finite ι] (hs : IndexedPartition s)
-    (hms : ∀ i, MeasurableSet (s i)) (f : ι → SimpleFunc α β) : SimpleFunc α β where
+    (hm : ∀ i, MeasurableSet (s i)) (f : ι → SimpleFunc α β) : SimpleFunc α β where
   toFun := hs.piecewise (fun i => f i)
   measurableSet_fiber' := fun _ =>
     letI : MeasurableSpace β := ⊤
-    hs.measurable_piecewise hms (fun i => (f i).measurable) trivial
+    hs.measurable_piecewise hm (fun i => (f i).measurable) trivial
   finite_range' := (Set.finite_iUnion (fun i => (f i).finite_range)).subset
     (hs.range_piecewise_subset _)
 
@@ -77,5 +85,13 @@ theorem stronglyMeasurable_piecewise [Countable ι] (hs : IndexedPartition s)
   have : ∀ᶠ n in atTop, (hf (hs.index x)).approx n x = (hf (e ((G n).index x))).approx n x := by
     filter_upwards [this] with n hn using by rw [hn]
   exact (Filter.tendsto_congr' this).mp (by simp [StronglyMeasurable.tendsto_approx])
+
+@[measurability, fun_prop]
+theorem aestronglyMeasurable_piecewise {μ : Measure α} [Countable ι] (hs : IndexedPartition s)
+    (hm : ∀ i, MeasurableSet (s i)) [TopologicalSpace β] (hf : ∀ i, AEStronglyMeasurable (f i) μ) :
+    AEStronglyMeasurable (hs.piecewise f) μ := by
+  choose p hp hq using hf
+  refine ⟨hs.piecewise p, hs.stronglyMeasurable_piecewise hm hp, ?_⟩
+  filter_upwards [ae_all_iff.2 hq] with x hx using hx (hs.index x)
 
 end IndexedPartition
