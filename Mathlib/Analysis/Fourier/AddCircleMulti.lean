@@ -158,16 +158,24 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 theorem integral_preimage (f : UnitAddTorus d → E) (a : d → ℝ) :
     ∫ x : UnitAddTorus d, f x =
     ∫ (x : d → ℝ) in {x : d → ℝ | ∀ i, x i ∈ Ioc (a i) (a i + 1)}, f (fun i => x i) := by
-  have m : MeasurableSet {x : d → ℝ | ∀ i, x i ∈ Ioc (a i) (a i + 1)} := by sorry
-  have h := integral_map_equiv (μ := volume.comap Subtype.val) (measurableEquivPiIoc a).symm f
-  have : ∫ (x : {x : d → ℝ | ∀ (i : d), x i ∈ Ioc (a i) (a i + 1)}),
-    f ((measurableEquivPiIoc a).symm x) ∂Measure.comap Subtype.val volume =
-    ∫ (x : {x : d → ℝ | ∀ (i : d), x i ∈ Ioc (a i) (a i + 1)}),
-    f (fun i => x.1 i) ∂Measure.comap Subtype.val volume := rfl
-  simp only [← coe_eq_subtype, this, integral_subtype_comap m (f := fun x => f (fun i => x i))] at h
-  convert h
-  rw [volume_pi]
-  sorry
+  have m : MeasurableSet {x : d → ℝ | ∀ i, x i ∈ Ioc (a i) (a i + 1)} :=
+    (MeasurableSet.univ_pi (fun i : d => measurableSet_Ioc (a := a i) (b := a i + 1))).congr
+    (by grind)
+  have hl : (measurableEquivPiIoc a).symm = fun (x : {x : d → ℝ | ∀ i, x i ∈ Ioc (a i) (a i + 1)})
+    (i : d) => (x.1 i : UnitAddCircle) := rfl
+  convert integral_map_equiv (μ := volume.comap Subtype.val) (measurableEquivPiIoc a).symm f
+  · have := Measure.map_map (μ := volume.comap Subtype.val) (measurable_pi_lambda
+      (fun (x : d → ℝ) => (fun i => x i : UnitAddTorus d))
+      (fun i => AddCircle.measurable_mk'.comp (measurable_pi_apply i)))
+      measurable_subtype_coe (α := {x : d → ℝ | ∀ i, x i ∈ Ioc (a i) (a i + 1)})
+    simp only [coe_setOf, mem_setOf_eq, Function.comp_def] at this
+    simp_rw [hl, coe_setOf, mem_setOf_eq, ← this]
+    convert (measurePreserving_pi _ _ (fun i => AddCircle.measurePreserving_mk 1 (a i))).map_eq.symm
+    · simp [volume, AddCircle.haarAddCircle]
+    · convert (map_comap_subtype_coe m volume)
+      convert (Measure.restrict_pi_pi (fun i => volume) (fun i => Ioc (a i) (a i + 1))).symm
+      grind
+  · simp only [← coe_eq_subtype, hl, integral_subtype_comap m (f := fun x => f (fun i => x i))]
 
 end Integral
 
