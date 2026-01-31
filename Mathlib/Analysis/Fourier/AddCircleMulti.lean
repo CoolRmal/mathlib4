@@ -250,6 +250,14 @@ variable {E : Type} [NormedAddCommGroup E] [NormedSpace ℂ E]
 `ℂ`-vector space, defined as the integral over `UnitAddTorus d` of `mFourier (-n) t • f t`. -/
 def mFourierCoeff (f : UnitAddTorus d → E) (n : d → ℤ) : E := ∫ t, mFourier (-n) t • f t
 
+/-- The Fourier coefficients of a function on `UnitAddTorus d` can be computed as an integral
+over `∏ i, (aᵢ, aᵢ + 1]`, for any real `a`. -/
+theorem mFourierCoeff_eq_integral (f : UnitAddTorus d → E) (n : d → ℤ) (a : d → ℝ) :
+    mFourierCoeff f n =
+    ∫ (x : d → ℝ) in {x : d → ℝ | ∀ i, x i ∈ Ioc (a i) (a i + 1)},
+    mFourier (-n) (fun i => x i) • f (fun i => x i) :=
+  integral_preimage (fun x => (mFourier (-n)) x • f x) a
+
 end fourierCoeff
 
 section FourierL2
