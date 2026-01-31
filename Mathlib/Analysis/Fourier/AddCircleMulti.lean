@@ -145,7 +145,7 @@ section Integral
 
 variable (a : d → ℝ)
 
-/-- The measurable equivalence between `UnitAddTorus d` and a product of `Ioc` intervals.  -/
+/-- The measurable equivalence between `UnitAddTorus d` and a product of `Ioc` intervals. -/
 def measurableEquivPiIoc : UnitAddTorus d ≃ᵐ {x : d → ℝ | ∀ i, x i ∈ Ioc (a i) (a i + 1)} :=
   (MeasurableEquiv.piCongrRight fun i => AddCircle.measurableEquivIoc 1 (a i)).trans <|
   MeasurableEquiv.subtypePiEquivPi.symm
