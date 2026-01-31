@@ -145,10 +145,12 @@ section Integral
 
 variable (a : d → ℝ)
 
+/-- The measurable equivalence between `UnitAddTorus d` and a product of `Ioc` intervals. -/
 def measurableEquivPiIoc : UnitAddTorus d ≃ᵐ {x : d → ℝ | ∀ i, x i ∈ Ioc (a i) (a i + 1)} :=
   (MeasurableEquiv.piCongrRight fun i => AddCircle.measurableEquivIoc 1 (a i)).trans <|
   MeasurableEquiv.subtypePiEquivPi.symm
 
+/-- The measurable equivalence between `UnitAddTorus d` and a product of `Ico` intervals. -/
 def measurableEquivPiIco : UnitAddTorus d ≃ᵐ {x : d → ℝ | ∀ i, x i ∈ Ico (a i) (a i + 1)}  :=
   (MeasurableEquiv.piCongrRight fun i => AddCircle.measurableEquivIco 1 (a i)).trans <|
   MeasurableEquiv.subtypePiEquivPi.symm
@@ -250,7 +252,7 @@ variable {E : Type} [NormedAddCommGroup E] [NormedSpace ℂ E]
 `ℂ`-vector space, defined as the integral over `UnitAddTorus d` of `mFourier (-n) t • f t`. -/
 def mFourierCoeff (f : UnitAddTorus d → E) (n : d → ℤ) : E := ∫ t, mFourier (-n) t • f t
 
-/-- The Fourier coefficients of a function on `UnitAddTorus d` can be computed as an integral
+/-- The Fourier coefficients of a function on `UnitAddTorus d` can be computed as integrals
 over `∏ i, (aᵢ, aᵢ + 1]`, for any real `a`. -/
 theorem mFourierCoeff_eq_integral (f : UnitAddTorus d → E) (n : d → ℤ) (a : d → ℝ) :
     mFourierCoeff f n =
