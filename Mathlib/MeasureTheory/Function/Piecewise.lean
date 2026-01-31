@@ -63,9 +63,10 @@ theorem stronglyMeasurable_piecewise [Countable ι] (hs : IndexedPartition s)
     · simp [hb]
       grind
   have G (n : ℕ) := hs.coarserPartition (g n) (sg n)
-  refine ⟨fun n => (G n).simple_func (fun i => ?_) (fun i => (hf (e i)).approx n), fun x => ?_⟩
+  refine ⟨fun n => (G n).simpleFunc_piecewise (fun i => ?_) (fun i => (hf (e i)).approx n),
+    fun x => ?_⟩
   · exact .biUnion (to_countable _) fun _ _ ↦ hm _
-  simp only [simple_func, SimpleFunc.coe_mk, piecewise_apply]
+  simp only [simpleFunc_piecewise, SimpleFunc.coe_mk, piecewise_apply]
   have : ∀ᶠ n in atTop, e ((G n).index x) = hs.index x := by
     obtain ⟨y, hy⟩ := he.2 (hs.index x)
     refine eventually_atTop.mpr ⟨y + 1, fun b hb => ?_⟩
