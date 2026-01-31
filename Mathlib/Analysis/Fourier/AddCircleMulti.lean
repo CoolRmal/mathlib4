@@ -145,34 +145,29 @@ section Integral
 
 variable (a : d → ℝ)
 
-def equivPiIoc : UnitAddTorus d ≃ {f : d → ℝ // ∀ i, f i ∈ Ioc (a i) (a i + 1)} :=
-  (Equiv.piCongrRight fun i => AddCircle.equivIoc 1 (a i)).trans <| Equiv.subtypePiEquivPi.symm
-
-def measurableEquivPiIoc : UnitAddTorus d ≃ᵐ {f : d → ℝ // ∀ i, f i ∈ Ioc (a i) (a i + 1)} :=
+def measurableEquivPiIoc : UnitAddTorus d ≃ᵐ {x : d → ℝ | ∀ i, x i ∈ Ioc (a i) (a i + 1)} :=
   (MeasurableEquiv.piCongrRight fun i => AddCircle.measurableEquivIoc 1 (a i)).trans <|
   MeasurableEquiv.subtypePiEquivPi.symm
 
-def equivPiIco : UnitAddTorus d ≃ univ.pi (fun i => Ico (a i) (a i + 1)) :=
-  (Equiv.piCongrRight fun i => AddCircle.equivIco 1 (a i)).trans <|
-  Equiv.subtypePiEquivPi.symm.trans <| Equiv.subtypeEquivRight (fun _ => by simp)
+def measurableEquivPiIco : UnitAddTorus d ≃ᵐ {x : d → ℝ | ∀ i, x i ∈ Ico (a i) (a i + 1)}  :=
+  (MeasurableEquiv.piCongrRight fun i => AddCircle.measurableEquivIco 1 (a i)).trans <|
+  MeasurableEquiv.subtypePiEquivPi.symm
 
-def measurableEquivPiIco : UnitAddTorus d ≃ᵐ univ.pi (fun i => Ico (a i) (a i + 1))  where
-  toEquiv := equivPiIco a
-  measurable_toFun := by
-    refine Measurable.subtype_mk ?_
-    exact measurable_pi_lambda _ fun i =>
-      (AddCircle.measurableEquivIco 1 (a i)).measurable.subtype_val.comp (measurable_pi_apply i)
-  measurable_invFun := by
-    refine measurable_pi_lambda _ fun i => ?_
-    have h1 : Measurable (fun (y : univ.pi fun j => Ico (a j) (a j + 1)) => y.val) :=
-      measurable_subtype_coe
-    have h2 : Measurable (fun (f : d → ℝ) => f i) := measurable_pi_apply i
-    have h3 : Measurable (fun (y : univ.pi fun j => Ico (a j) (a j + 1)) => y.val i) :=
-      h2.comp h1
-    have h4 : Measurable fun (y : univ.pi fun j => Ico (a j) (a j + 1)) =>
-        (⟨y.val i, y.prop i trivial⟩ : Ico (a i) (a i + 1)) :=
-      Measurable.subtype_mk h3
-    exact (AddCircle.measurableEquivIco 1 (a i)).symm.measurable.comp h4
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+
+theorem integral_preimage (f : UnitAddTorus d → E) (a : d → ℝ) :
+    ∫ x : UnitAddTorus d, f x =
+    ∫ (x : d → ℝ) in {x : d → ℝ | ∀ i, x i ∈ Ioc (a i) (a i + 1)}, f (fun i => x i) := by
+  have m : MeasurableSet {x : d → ℝ | ∀ i, x i ∈ Ioc (a i) (a i + 1)} := by sorry
+  have h := integral_map_equiv (μ := volume.comap Subtype.val) (measurableEquivPiIoc a).symm f
+  have : ∫ (x : {x : d → ℝ | ∀ (i : d), x i ∈ Ioc (a i) (a i + 1)}),
+    f ((measurableEquivPiIoc a).symm x) ∂Measure.comap Subtype.val volume =
+    ∫ (x : {x : d → ℝ | ∀ (i : d), x i ∈ Ioc (a i) (a i + 1)}),
+    f (fun i => x.1 i) ∂Measure.comap Subtype.val volume := rfl
+  simp only [← coe_eq_subtype, this, integral_subtype_comap m (f := fun x => f (fun i => x i))] at h
+  convert h
+  rw [volume_pi]
+  sorry
 
 end Integral
 
