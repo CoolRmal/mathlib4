@@ -298,6 +298,7 @@ protected theorem div [Group β] [IsTopologicalGroup β] (hf : AEStronglyMeasura
   ⟨hf.mk f / hg.mk g, hf.stronglyMeasurable_mk.div' hg.stronglyMeasurable_mk,
     hf.ae_eq_mk.div hg.ae_eq_mk⟩
 
+@[fun_prop]
 theorem div₀ [GroupWithZero β] [ContinuousMul β] [ContinuousInv₀ β] [PseudoMetrizableSpace β]
     [MeasurableSpace β] [BorelSpace β] [MeasurableSingletonClass β]
     (hf : AEStronglyMeasurable[m] f μ) (hg : AEStronglyMeasurable[m] g μ) :
