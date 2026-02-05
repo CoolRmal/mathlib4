@@ -424,7 +424,7 @@ protected theorem div [Div β] [ContinuousDiv β] (hf : StronglyMeasurable f)
 theorem div₀ [GroupWithZero β] [ContinuousMul β] [ContinuousInv₀ β] (hf : StronglyMeasurable f)
     (hg : StronglyMeasurable g) (h₀ : ∀ (x : α), g x ≠ 0) : StronglyMeasurable (f / g) :=
   ⟨fun n => hf.approx n / hg.approx n,
-  fun x => (hf.tendsto_approx x).div (hg.tendsto_approx x) (h₀ x)⟩
+    fun x => (hf.tendsto_approx x).div (hg.tendsto_approx x) (h₀ x)⟩
 
 theorem div₀' [GroupWithZero β] [ContinuousMul β] [ContinuousInv₀ β] [PseudoMetrizableSpace β]
     [MeasurableSpace β] [BorelSpace β] [MeasurableSingletonClass β] (hf : StronglyMeasurable f)
