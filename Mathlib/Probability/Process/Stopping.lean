@@ -1147,9 +1147,10 @@ section Nat
 
 open Filtration
 
-variable {u : ℕ → Ω → β} {τ π : Ω → ℕ∞}
+variable {u : ι → Ω → β} {τ π : Ω → WithTop ι}
+variable [LinearOrder ι] [LocallyFiniteOrder ι] [One ι] [Add ι] [SuccAddOrder ι] [NoMaxOrder ι]
 
-theorem stoppedValue_sub_eq_sum [AddCommGroup β] (hle : τ ≤ π) (hπ : ∀ ω, π ω ≠ ∞) :
+theorem stoppedValue_sub_eq_sum [AddCommGroup β] (hle : τ ≤ π) (hπ : ∀ ω, π ω ≠ ⊤) :
     stoppedValue u π - stoppedValue u τ = fun ω =>
       (∑ i ∈ Finset.Ico (τ ω).untopA (π ω).untopA, (u (i + 1) - u i)) ω := by
   ext ω

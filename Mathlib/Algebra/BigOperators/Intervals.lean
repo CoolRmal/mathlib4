@@ -47,18 +47,21 @@ theorem prod_Ico_add_right_sub_eq [AddCommMonoid α] [PartialOrder α] [IsOrdere
     ∏ x ∈ Ico (a + c) (b + c), f (x - c) = ∏ x ∈ Ico a b, f x := by
   simp only [← map_add_right_Ico, prod_map, addRightEmbedding_apply, add_tsub_cancel_right]
 
-@[to_additive]
-theorem prod_Ico_succ_top {a b : ℕ} (hab : a ≤ b) (f : ℕ → M) :
+@[to_additive (dont_translate := α)]
+theorem prod_Ico_succ_top [LinearOrder α] [LocallyFiniteOrder α] [One α] [Add α] [SuccAddOrder α]
+    [NoMaxOrder α] {a b : α} (hab : a ≤ b) (f : α → M) :
     (∏ k ∈ Ico a (b + 1), f k) = (∏ k ∈ Ico a b, f k) * f b := by
   rw [← Finset.insert_Ico_right_eq_Ico_add_one hab, prod_insert right_notMem_Ico, mul_comm]
 
-@[to_additive]
-theorem prod_Ico_consecutive (f : ℕ → M) {m n k : ℕ} (hmn : m ≤ n) (hnk : n ≤ k) :
+@[to_additive (dont_translate := α)]
+theorem prod_Ico_consecutive [LinearOrder α] [LocallyFiniteOrder α] [One α] [Add α] [SuccAddOrder α]
+    [NoMaxOrder α] (f : α → M) {m n k : α} (hmn : m ≤ n) (hnk : n ≤ k) :
     ((∏ i ∈ Ico m n, f i) * ∏ i ∈ Ico n k, f i) = ∏ i ∈ Ico m k, f i :=
   Ico_union_Ico_eq_Ico hmn hnk ▸ Eq.symm (prod_union (Ico_disjoint_Ico_consecutive m n k))
 
-@[to_additive]
-theorem prod_Ioc_consecutive (f : ℕ → M) {m n k : ℕ} (hmn : m ≤ n) (hnk : n ≤ k) :
+@[to_additive (dont_translate := α)]
+theorem prod_Ioc_consecutive [LinearOrder α] [LocallyFiniteOrder α] [One α] [Add α] [SuccAddOrder α]
+    [NoMaxOrder α] (f : α → M) {m n k : α} (hmn : m ≤ n) (hnk : n ≤ k) :
     ((∏ i ∈ Ioc m n, f i) * ∏ i ∈ Ioc n k, f i) = ∏ i ∈ Ioc m k, f i := by
   rw [← Ioc_union_Ioc_eq_Ioc hmn hnk, prod_union]
   apply disjoint_left.2 fun x hx h'x => _
@@ -70,35 +73,59 @@ theorem prod_Ioc_succ_top {a b : ℕ} (hab : a ≤ b) (f : ℕ → M) :
     (∏ k ∈ Ioc a (b + 1), f k) = (∏ k ∈ Ioc a b, f k) * f (b + 1) := by
   rw [← prod_Ioc_consecutive _ hab (Nat.le_succ b), Nat.Ioc_succ_singleton, prod_singleton]
 
-@[to_additive]
-theorem prod_Icc_succ_top {a b : ℕ} (hab : a ≤ b + 1) (f : ℕ → M) :
+@[to_additive (dont_translate := α)]
+theorem prod_Icc_succ_top [LinearOrder α] [LocallyFiniteOrder α] [One α] [Add α] [SuccAddOrder α]
+    [NoMaxOrder α] {a b : α} (hab : a ≤ b + 1) (f : α → M) :
     (∏ k ∈ Icc a (b + 1), f k) = (∏ k ∈ Icc a b, f k) * f (b + 1) := by
   rw [← Ico_add_one_right_eq_Icc, prod_Ico_succ_top hab, Ico_add_one_right_eq_Icc]
+
+@[to_additive (dont_translate := α)]
+theorem prod_Icc_mul_prod_Ico [LinearOrder α] [LocallyFiniteOrder α] [One α] [Add α] [Bot α]
+    [SuccAddOrder α] [NoMaxOrder α] (f : α → M) {m n : α} (h : m ≤ n) :
+    ((∏ k ∈ Icc ⊥ m, f k) * ∏ k ∈ Ico m n, f k) = ∏ k ∈ Icc ⊥ n, f k :=
+  sorry
 
 @[to_additive]
 theorem prod_range_mul_prod_Ico (f : ℕ → M) {m n : ℕ} (h : m ≤ n) :
     ((∏ k ∈ range m, f k) * ∏ k ∈ Ico m n, f k) = ∏ k ∈ range n, f k :=
   Nat.Ico_zero_eq_range ▸ Nat.Ico_zero_eq_range ▸ prod_Ico_consecutive f m.zero_le h
 
+@[to_additive (dont_translate := α)]
+theorem prod_Icc_eq_mul_Ico [LinearOrder α] [LocallyFiniteOrder α] [One α] [Add α] [Bot α]
+    [SuccAddOrder α] [NoMaxOrder α] (f : α → M) {n : α} (hn : ⊥ < n) :
+    ∏ x ∈ Icc ⊥ n, f x = f ⊥ * ∏ x ∈ Ico 1 n, f x :=
+  sorry
+
 @[to_additive]
 theorem prod_range_eq_mul_Ico (f : ℕ → M) {n : ℕ} (hn : 0 < n) :
     ∏ x ∈ Finset.range n, f x = f 0 * ∏ x ∈ Ico 1 n, f x :=
   Finset.range_eq_Ico ▸ Finset.prod_eq_prod_Ico_succ_bot hn f
 
+@[to_additive (dont_translate := α)]
+theorem prod_Ico_eq_mul_inv {δ : Type*} [CommGroup δ] [LinearOrder α] [LocallyFiniteOrder α] [Bot α]
+    [Bot α] [One α] [Add α] [SuccAddOrder α] [NoMaxOrder α] (f : α → δ) {m n : α} (h : m ≤ n) :
+    ∏ k ∈ Ico m n, f k = (∏ k ∈ Icc ⊥ n, f k) * (∏ k ∈ Icc ⊥ m, f k)⁻¹ :=
+  eq_mul_inv_iff_mul_eq.2 <| by (rw [mul_comm]; exact prod_Icc_mul_prod_Ico f h)
+
 @[to_additive]
-theorem prod_Ico_eq_mul_inv {δ : Type*} [CommGroup δ] (f : ℕ → δ) {m n : ℕ} (h : m ≤ n) :
+theorem prod_Ico_eq_mul_inv_nat {δ : Type*} [CommGroup δ] (f : ℕ → δ) {m n : ℕ} (h : m ≤ n) :
     ∏ k ∈ Ico m n, f k = (∏ k ∈ range n, f k) * (∏ k ∈ range m, f k)⁻¹ :=
   eq_mul_inv_iff_mul_eq.2 <| by (rw [mul_comm]; exact prod_range_mul_prod_Ico f h)
 
 @[to_additive]
 theorem prod_Ico_eq_div {δ : Type*} [CommGroup δ] (f : ℕ → δ) {m n : ℕ} (h : m ≤ n) :
-    ∏ k ∈ Ico m n, f k = (∏ k ∈ range n, f k) / ∏ k ∈ range m, f k := by
+    ∏ k ∈ Ico m n, f k = (∏ k ∈ Iic n, f k) / ∏ k ∈ Iic m, f k := by
   simpa only [div_eq_mul_inv] using prod_Ico_eq_mul_inv f h
+
+@[to_additive]
+theorem prod_Ico_eq_div_nat {δ : Type*} [CommGroup δ] (f : ℕ → δ) {m n : ℕ} (h : m ≤ n) :
+    ∏ k ∈ Ico m n, f k = (∏ k ∈ range n, f k) / ∏ k ∈ range m, f k := by
+  simpa only [div_eq_mul_inv] using prod_Ico_eq_mul_inv_nat f h
 
 @[to_additive]
 theorem prod_range_div_prod_range {G : Type*} [CommGroup G] {f : ℕ → G} {n m : ℕ} (hnm : n ≤ m) :
     ((∏ k ∈ range m, f k) / ∏ k ∈ range n, f k) = ∏ k ∈ range m with n ≤ k, f k := by
-  rw [← prod_Ico_eq_div f hnm]
+  rw [← prod_Ico_eq_div_nat f hnm]
   congr
   apply Finset.ext
   simp only [mem_Ico, mem_filter, mem_range, *]
