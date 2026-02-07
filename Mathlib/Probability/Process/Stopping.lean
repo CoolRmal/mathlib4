@@ -1148,14 +1148,20 @@ section Nat
 open Filtration
 
 variable {u : ι → Ω → β} {τ π : Ω → WithTop ι}
-variable [LinearOrder ι] [LocallyFiniteOrder ι] [One ι] [Add ι] [SuccAddOrder ι] [NoMaxOrder ι]
+variable [LinearOrder ι] [LocallyFiniteOrder ι] [OrderBot ι] [One ι] [Add ι] [SuccAddOrder ι]
+  [NoMaxOrder ι]
+
+@[to_additive (dont_translate := ι)]
+theorem prod_Ico_div [CommGroup β] {m n : ι} (hmn : m ≤ n) (f : ι → β) :
+    ∏ i ∈ Finset.Ico m n, f (i + 1) / f i = f n / f m := by
+  sorry
 
 theorem stoppedValue_sub_eq_sum [AddCommGroup β] (hle : τ ≤ π) (hπ : ∀ ω, π ω ≠ ⊤) :
     stoppedValue u π - stoppedValue u τ = fun ω =>
       (∑ i ∈ Finset.Ico (τ ω).untopA (π ω).untopA, (u (i + 1) - u i)) ω := by
   ext ω
   have h_le' : (τ ω).untopA ≤ (π ω).untopA := untopA_mono (mod_cast hπ ω) (hle ω)
-  rw [Finset.sum_Ico_eq_sub _ h_le', Finset.sum_range_sub, Finset.sum_range_sub]
+  rw [Finset.sum_Ico_eq_sub _ h_le']
   simp [stoppedValue]
 
 theorem stoppedValue_sub_eq_sum' [AddCommGroup β] (hle : τ ≤ π) {N : ℕ} (hbdd : ∀ ω, π ω ≤ N) :

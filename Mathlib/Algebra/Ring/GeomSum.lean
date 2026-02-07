@@ -248,7 +248,7 @@ lemma mul_neg_geom_sum (x : R) (n : ℕ) : ((1 - x) * ∑ i ∈ range n, x ^ i) 
 protected lemma Commute.mul_geom_sum₂_Ico (h : Commute x y) {m n : ℕ}
     (hmn : m ≤ n) :
     ((x - y) * ∑ i ∈ Finset.Ico m n, x ^ i * y ^ (n - 1 - i)) = x ^ n - x ^ m * y ^ (n - m) := by
-  rw [sum_Ico_eq_sub _ hmn]
+  rw [sum_Ico_eq_sub_nat _ hmn]
   have :
     ∑ k ∈ range m, x ^ k * y ^ (n - 1 - k) =
       ∑ k ∈ range m, x ^ k * (y ^ (n - m) * y ^ (m - 1 - k)) := by
@@ -288,11 +288,12 @@ protected lemma Commute.geom_sum₂_Ico_mul (h : Commute x y) {m n : ℕ}
 
 lemma geom_sum_Ico_mul (x : R) {m n : ℕ} (hmn : m ≤ n) :
     (∑ i ∈ Finset.Ico m n, x ^ i) * (x - 1) = x ^ n - x ^ m := by
-  rw [sum_Ico_eq_sub _ hmn, sub_mul, geom_sum_mul, geom_sum_mul, sub_sub_sub_cancel_right]
+  rw [sum_Ico_eq_sub_nat _ hmn, sub_mul, geom_sum_mul, geom_sum_mul, sub_sub_sub_cancel_right]
 
 lemma geom_sum_Ico_mul_neg (x : R) {m n : ℕ} (hmn : m ≤ n) :
     (∑ i ∈ Finset.Ico m n, x ^ i) * (1 - x) = x ^ m - x ^ n := by
-  rw [sum_Ico_eq_sub _ hmn, sub_mul, geom_sum_mul_neg, geom_sum_mul_neg, sub_sub_sub_cancel_left]
+  rw [sum_Ico_eq_sub_nat _ hmn, sub_mul, geom_sum_mul_neg, geom_sum_mul_neg,
+    sub_sub_sub_cancel_left]
 
 end Ring
 
