@@ -506,8 +506,8 @@ theorem _root_.CompactSpace.eq_of_le_compact_t2 (hst : t ≤ s) (hs : @T2Space X
 
 /-- Suppose we have two Hausdorff topologies `s, t` on `X`. If `t` is strictly finer than `s` and
 `X` is compact under `s`, then `X` is not compact under `t`. -/
-theorem _root_.CompactSpace.nonCompact_of_lt_compact_t2 [@CompactSpace X s] (hst : t < s)
-    (hs : @T2Space X s) : @NoncompactSpace X t := by
+theorem _root_.CompactSpace.nonCompact_of_lt_compact_t2 (hst : t < s) (hs : @T2Space X s) :
+    @NoncompactSpace X t := by
   refine not_compactSpace_iff.1 (fun hct => ?_)
   grind [hct.eq_of_le_compact_t2 hst.le hs]
 
