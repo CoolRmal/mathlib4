@@ -462,6 +462,10 @@ theorem gauge_le_one_iff_mem_closure (hc : Convex ℝ s) (hs₀ : s ∈ 𝓝 0) 
     le_on_closure (fun _ ↦ gauge_le_one_of_mem) (continuous_gauge hc hs₀).continuousOn
       continuousOn_const h⟩
 
+theorem gauge_le_one_eq_closure (hc : Convex ℝ s) (hs₀ : s ∈ 𝓝 0) :
+    { x | gauge s x ≤ 1 } = closure s := by
+  ext; exact gauge_le_one_iff_mem_closure hc hs₀
+
 theorem gauge_eq_one_iff_mem_frontier (hc : Convex ℝ s) (hs₀ : s ∈ 𝓝 0) :
     gauge s x = 1 ↔ x ∈ frontier s := by
   rw [eq_iff_le_not_lt, gauge_le_one_iff_mem_closure hc hs₀, gauge_lt_one_iff_mem_interior hc hs₀]

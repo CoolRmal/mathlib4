@@ -8,6 +8,7 @@ module
 public import Mathlib.Analysis.LocallyConvex.WithSeminorms
 public import Mathlib.Topology.Semicontinuity.Basic
 public import Mathlib.Topology.Baire.Lemmas
+public import Mathlib.Analysis.Convex.Gauge
 
 /-!
 # Barrelled spaces and the Banach-Steinhaus theorem / Uniform Boundedness Principle
@@ -28,6 +29,7 @@ The more standard Banach-Steinhaus theorem for normed spaces is then deduced fro
   Given a sequence of continuous linear maps from `E` to `F` that converges pointwise to a
   function `f : E → F`, this bundles `f` as a continuous linear map using the
   Banach-Steinhaus theorem.
+* `IsBarrelled`: a set `s` is Barrelled if it is closed, convex, absorbent, and balanced.
 
 ## Main theorems
 
@@ -42,6 +44,8 @@ The more standard Banach-Steinhaus theorem for normed spaces is then deduced fro
   to a fixed seminorm family. Fix `E` a barrelled space and `F` a `PolynormableSpace`.
   Any family `𝓕 : ι → E →L[𝕜] F` of continuous linear maps that is pointwise von Neumann bounded
   is (uniformly) equicontinuous.
+* `BarrelledSpace_iff_nhds_zero_of_isBarrelled`: A space is Barrelled iff every barrelled set
+  is a neighborhood of `0`.
 
 ## Implementation details
 
@@ -61,10 +65,6 @@ since it is exactly what we need for the proof. One could then expect to need th
 characterization to prove that Baire TVS are barrelled, but the proof is actually easier to do
 with the seminorm characterization!
 
-## TODO
-
-* define barrels and prove that a locally convex space is barrelled iff all barrels are
-  neighborhoods of zero.
 
 ## References
 
@@ -250,3 +250,34 @@ protected abbrev WithSeminorms.continuousLinearMapOfTendsto [T2Space F] {l : Fil
 end Deprecated
 
 end TVS_anyField
+
+section Barrel
+
+variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
+
+def IsBarrelled (𝕜 : Type*) (s : Set E) [RCLike 𝕜] [Module 𝕜 E] [IsScalarTower ℝ 𝕜 E] : Prop :=
+  IsClosed s ∧ (Convex ℝ s) ∧ (Absorbent 𝕜 s) ∧ (Balanced 𝕜 s)
+
+namespace IsBarrelled
+
+variable {𝕜 : Type*} {s : Set E} [RCLike 𝕜] [Module 𝕜 E] [IsScalarTower ℝ 𝕜 E]
+  [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
+
+theorem gauge_le_one_eq_closure (hc : Convex ℝ s) (hs₀ : s ∈ 𝓝 0) :
+    { x | gauge s x ≤ 1 } = closure s := by
+  ext; exact gauge_le_one_iff_mem_closure hc hs₀
+
+/-- A barrelled set `s` is equal to `{x | p x ≤ 1}`, where `p` is the gauga seminorm associated
+with `s`. -/
+lemma eq_gauageSeminorm_ball (hs : IsBarrelled 𝕜 s) :
+    s = {x | gauge s x ≤ 1} := by
+  refine hs.1.closure_eq.symm.trans ?_
+  sorry
+
+theorem BarrelledSpace_iff_nhds_zero_of_isBarrelled :
+    BarrelledSpace 𝕜 E ↔ ∀ s : Set E, IsBarrelled 𝕜 s → s ∈ 𝓝 0 := by
+  sorry
+
+end IsBarrelled
+
+end Barrel
