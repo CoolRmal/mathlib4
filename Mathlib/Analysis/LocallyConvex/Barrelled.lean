@@ -261,7 +261,7 @@ def IsBarrelled (𝕜 : Type*) (s : Set E) [RCLike 𝕜] [Module 𝕜 E] [IsScal
 namespace IsBarrelled
 
 variable {𝕜 : Type*} {s : Set E} [RCLike 𝕜] [Module 𝕜 E] [IsScalarTower ℝ 𝕜 E]
-  [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
+  [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [ContinuousConstSMul 𝕜 E]
 
 theorem gauge_le_one_eq_closure (hc : Convex ℝ s) (hs₀ : s ∈ 𝓝 0) :
     { x | gauge s x ≤ 1 } = closure s := by
@@ -275,8 +275,14 @@ lemma eq_gauageSeminorm_ball (hs : IsBarrelled 𝕜 s) :
   sorry
 
 theorem BarrelledSpace_iff_nhds_zero_of_isBarrelled :
-    BarrelledSpace 𝕜 E ↔ ∀ s : Set E, IsBarrelled 𝕜 s → s ∈ 𝓝 0 := by
-  sorry
+    BarrelledSpace 𝕜 E ↔ ∀ s : Set E, IsBarrelled 𝕜 s → s ∈ 𝓝 0 where
+  mp hq := sorry
+  mpr hq := by
+    refine BarrelledSpace.mk fun p hp => Seminorm.continuous' (r := 1) (hq _ ⟨?_, ?_, ?_, ?_⟩)
+    · sorry
+    · exact p.convex_closedBall 0 1
+    · exact p.absorbent_closedBall_zero (by linarith)
+    · exact p.balanced_closedBall_zero 1
 
 end IsBarrelled
 
