@@ -10,6 +10,7 @@ public import Mathlib.Analysis.Convex.Function
 public import Mathlib.Analysis.LocallyConvex.Basic
 public import Mathlib.Analysis.Normed.Module.Basic
 public import Mathlib.Data.Real.Pointwise
+public import Mathlib.Topology.Semicontinuity.Basic
 
 /-!
 # Seminorms
@@ -1151,6 +1152,12 @@ protected theorem continuous' [TopologicalSpace E] [IsTopologicalAddGroup E]
     (hp : p.closedBall 0 r ∈ (𝓝 0 : Filter E)) : Continuous p :=
   Seminorm.continuous_of_continuousAt_zero (continuousAt_zero' hp)
 
+theorem continuous'_iff [TopologicalSpace E] [IsTopologicalAddGroup E]
+    [ContinuousConstSMul 𝕜 E] {p : Seminorm 𝕜 E} {r : ℝ} (hr : 0 < r) :
+    Continuous p ↔ p.closedBall 0 r ∈ 𝓝 0 :=
+  ⟨fun H ↦ p.closedBall_zero_eq ▸ (H.tendsto' 0 0 (map_zero p)).eventually_le_const hr,
+    p.continuous'⟩
+
 theorem continuous_of_le [TopologicalSpace E] [IsTopologicalAddGroup E]
     {p q : Seminorm 𝕝 E} (hq : Continuous q) (hpq : p ≤ q) : Continuous p := by
   refine Seminorm.continuous_of_forall (fun r hr ↦ Filter.mem_of_superset
@@ -1185,6 +1192,12 @@ lemma uniformity_eq_of_hasBasis
     (h₁ : ∃ r, p.closedBall 0 r ∈ 𝓝 0) (h₂ : ∀ i, p' i → ∃ r > 0, p.ball 0 r ⊆ s i) :
     𝓤 E = ⨅ r > 0, 𝓟 {x | p (x.1 - x.2) < r} := by
   rw [uniformSpace_eq_of_hasBasis p hb h₁ h₂]; rfl
+
+lemma isClosed_closedBall [TopologicalSpace E] {p : Seminorm 𝕝 E} (hp : LowerSemicontinuous p)
+    (r : ℝ) :
+    IsClosed (p.closedBall 0 r) :=
+  have : p.closedBall 0 r = p ⁻¹' Iic r := by simp [closedBall]; grind
+  this ▸ hp.isClosed_preimage r
 
 end Continuity
 

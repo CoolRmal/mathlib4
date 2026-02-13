@@ -77,6 +77,7 @@ banach-steinhaus, uniform boundedness, equicontinuity
 
 @[expose] public section
 
+open scoped Pointwise
 open Filter Topology Set ContinuousLinearMap
 
 section defs
@@ -255,31 +256,48 @@ section Barrel
 
 variable {E : Type*} [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
 
-def IsBarrelled (𝕜 : Type*) (s : Set E) [RCLike 𝕜] [Module 𝕜 E] [IsScalarTower ℝ 𝕜 E] : Prop :=
+def IsBarrelled (𝕜 : Type*) (s : Set E) [SeminormedRing 𝕜] [SMul 𝕜 E] : Prop :=
   IsClosed s ∧ (Convex ℝ s) ∧ (Absorbent 𝕜 s) ∧ (Balanced 𝕜 s)
 
 namespace IsBarrelled
 
 variable {𝕜 : Type*} {s : Set E} [RCLike 𝕜] [Module 𝕜 E] [IsScalarTower ℝ 𝕜 E]
-  [IsTopologicalAddGroup E] [ContinuousSMul ℝ E] [ContinuousConstSMul 𝕜 E]
+  [IsTopologicalAddGroup E] [ContinuousConstSMul 𝕜 E]
 
-theorem gauge_le_one_eq_closure (hc : Convex ℝ s) (hs₀ : s ∈ 𝓝 0) :
-    { x | gauge s x ≤ 1 } = closure s := by
-  ext; exact gauge_le_one_iff_mem_closure hc hs₀
+/-- A barrelled set is absorbent over `ℝ`. -/
+lemma absorbent_real (hs : Absorbent 𝕜 s) :
+    Absorbent ℝ s := by sorry
 
-/-- A barrelled set `s` is equal to `{x | p x ≤ 1}`, where `p` is the gauga seminorm associated
-with `s`. -/
-lemma eq_gauageSeminorm_ball (hs : IsBarrelled 𝕜 s) :
-    s = {x | gauge s x ≤ 1} := by
+/-- A barrelled set `s` is equal to `{x | p x ≤ 1}`, where `p` is the gauga associated with `s`. -/
+lemma eq_gaugeSeminorm_closedball (hs : IsBarrelled 𝕜 s) :
+    s = (gaugeSeminorm hs.2.2.2 hs.2.1 (absorbent_real hs.2.2.1)).closedBall 0 1 := by
   refine hs.1.closure_eq.symm.trans ?_
   sorry
 
-theorem BarrelledSpace_iff_nhds_zero_of_isBarrelled :
+/-- The gauge function associated with a barrelled set is lower semicontinuous. -/
+lemma lowersemicontinuous_gauge [T1Space E] [ContinuousConstSMul ℝ E] (hs : IsBarrelled 𝕜 s) :
+    LowerSemicontinuous (gauge s) := by
+  refine lowerSemicontinuous_iff_isClosed_preimage.2 fun r => ?_
+  rcases lt_trichotomy r 0 with h | h | h
+  · have : gauge s ⁻¹' Iic r = (@RCLike.ofReal 𝕜 inferInstance r) • s := by
+      nth_rw 2 [eq_gaugeSeminorm_closedball hs]
+      rw [(gaugeSeminorm hs.2.2.2 hs.2.1 (absorbent_real hs.2.2.1)).smul_closedBall_zero]
+      · sorry
+      · simp; grind
+    simpa [this] using hs.1.smul₀ (RCLike.ofReal r)
+  · sorry
+  · have : gauge s ⁻¹' Iic r = ∅ := by sorry
+    simp [this]
+
+theorem BarrelledSpace_iff_nhds_zero_of_isBarrelled [T1Space E] [ContinuousConstSMul ℝ E] :
     BarrelledSpace 𝕜 E ↔ ∀ s : Set E, IsBarrelled 𝕜 s → s ∈ 𝓝 0 where
-  mp hq := sorry
+  mp hq s hs := by
+    rw [eq_gaugeSeminorm_closedball hs, ← Seminorm.continuous'_iff (by linarith)]
+    exact BarrelledSpace.continuous_of_lowerSemicontinuous
+      (gaugeSeminorm hs.2.2.2 hs.2.1 (absorbent_real hs.2.2.1)) (lowersemicontinuous_gauge hs)
   mpr hq := by
     refine BarrelledSpace.mk fun p hp => Seminorm.continuous' (r := 1) (hq _ ⟨?_, ?_, ?_, ?_⟩)
-    · sorry
+    · exact p.isClosed_closedBall hp 1
     · exact p.convex_closedBall 0 1
     · exact p.absorbent_closedBall_zero (by linarith)
     · exact p.balanced_closedBall_zero 1
