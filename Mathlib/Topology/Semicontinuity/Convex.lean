@@ -295,5 +295,3 @@ theorem real_univ_sSup_of_nat_affine_eq [HereditarilyLindelofSpace E]
 end Real
 
 end ConvexOn
-
-#min_imports
