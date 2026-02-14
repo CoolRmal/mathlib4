@@ -155,6 +155,7 @@ theorem ConvexOn.univ_sSup_affine_eq (hφc : LowerSemicontinuous φ) (hφcv : Co
   _ = φ := by ext; simp
 
 /-- Suppose `E` is hereditarily Lindelöf. A function `φ : E → ℝ` that is convex and
+lower-semicontinuous on a closed convex subset is the supremum of a countable family of functions
 that are the restrictions to `s` of continuous affine linear functions in `E`. -/
 theorem ConvexOn.sSup_of_countable_affine_eq [HereditarilyLindelofSpace E] (hsc : IsClosed s)
     (hφc : LowerSemicontinuousOn φ s) (hφcv : ConvexOn ℝ s φ) :
