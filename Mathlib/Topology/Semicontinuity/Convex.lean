@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Yongxi Lin. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Yongxi Lin, Thomas Zhu
+Authors: Yongxi Lin
 -/
 module
 
@@ -120,16 +120,6 @@ theorem sSup_affine_eq (hsc : IsClosed s)
     obtain ⟨f, hf⟩ := exists_affine (𝕜 := 𝕜) hz.2 hsc hφc hφcv
     exact ⟨z, hf ▸ mem_range_self _, hz.1⟩
 
-lemma sSup_comp {α β γ : Type*} [ConditionallyCompleteLattice γ] (f : α ≃ β) {s : Set (β → γ)}
-    (hs : s.Nonempty) (hbdd : BddAbove s) :
-    (sSup s) ∘ f = sSup ((fun g => g ∘ f) '' s) := by
-  refine OrderIso.map_csSup' ⟨⟨(fun g => g ∘ f), (fun h => h ∘ f.symm),
-    by grind, by grind⟩, ?_⟩ hs hbdd
-  simp only [Equiv.coe_fn_mk]
-  refine ⟨fun hp => fun x => ?_, fun hq => fun x => hq (f x)⟩
-  rw [← EquivLike.apply_coe_symm_apply f x]
-  exact hp (f.symm x)
-
 /-- The countable version of `sSup_affine_eq`. -/
 theorem sSup_of_countable_affine_eq [HereditarilyLindelofSpace E] (hsc : IsClosed s)
     (hφc : LowerSemicontinuousOn φ s) (hφcv : ConvexOn ℝ s φ) :
@@ -190,18 +180,12 @@ theorem univ_sSup_affine_eq (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn �
     ext f
     refine ⟨fun ⟨hp, l, c, hlc⟩ => ⟨f ∘ Subtype.val, ⟨fun x => hp (Subtype.val x), ⟨l, c, ?_⟩⟩, ?_⟩,
       fun ⟨a, ⟨⟨h, ⟨l, c, hlc⟩⟩, hb⟩⟩ => ⟨fun x => ?_, ⟨l, c, ?_⟩⟩⟩
-    · ext x
-      simpa using congrFun hlc x
-    · ext x; simp
+    · ext x; simpa using congrFun hlc x
+    · ext; simp
     · simpa using hb ▸ h ⟨x, trivial⟩
     · subst hlc
       simpa using hb.symm
-  _ = sSup 𝓕 ∘ (Equiv.Set.univ E).symm := by
-    refine (sSup_comp (Equiv.Set.univ E).symm ?_ ?_).symm
-    · obtain ⟨f, hf⟩ := exists_affine (𝕜 := 𝕜) (by grind : φ 0 - 1 < φ (⟨0, @mem_univ E 0⟩ : univ))
-        isClosed_univ (lowerSemicontinuousOn_univ_iff.2 hφc) hφcv
-      exact ⟨f, f.2⟩
-    · exact (bddAbove_def.2 ⟨φ ∘ Subtype.val, fun y hy => hy.1⟩)
+  _ = sSup 𝓕 ∘ (Equiv.Set.univ E).symm := by ext x; rw [sSup_image', sSup_eq_iSup']; simp
   _ = φ ∘ Subtype.val ∘ (Equiv.Set.univ E).symm :=
     congrArg (fun g => g ∘ (Equiv.Set.univ E).symm) this
   _ = φ := by ext; simp
