@@ -3445,6 +3445,7 @@ public import Mathlib.Computability.Primrec.List
 public import Mathlib.Computability.RecursiveIn
 public import Mathlib.Computability.Reduce
 public import Mathlib.Computability.RegularExpressions
+public import Mathlib.Computability.StateTransition
 public import Mathlib.Computability.TMComputable
 public import Mathlib.Computability.TMConfig
 public import Mathlib.Computability.TMToPartrec
@@ -4551,6 +4552,8 @@ public import Mathlib.GroupTheory.Subsemigroup.Centralizer
 public import Mathlib.GroupTheory.Sylow
 public import Mathlib.GroupTheory.Torsion
 public import Mathlib.GroupTheory.Transfer
+public import Mathlib.InformationTheory.Coding.KraftMcMillan
+public import Mathlib.InformationTheory.Coding.UniquelyDecodable
 public import Mathlib.InformationTheory.Hamming
 public import Mathlib.InformationTheory.KullbackLeibler.Basic
 public import Mathlib.InformationTheory.KullbackLeibler.KLFun
