@@ -31,7 +31,9 @@ of continuous affine linear functions. We follow the proof in [bourbaki1987].
 
 @[expose] public section
 
-open Function Set RCLike ContinuousLinearMap
+open scoped Topology
+
+open Function Set RCLike ContinuousLinearMap Filter
 
 namespace ConvexOn
 
@@ -58,8 +60,39 @@ theorem _root_.LowerSemicontinuousOn.isClosed_re_epigraph (hsc : IsClosed s)
 
 section RCLike
 
-variable [AddCommGroup E] [Module ℝ E] [Module 𝕜 E] [IsScalarTower ℝ 𝕜 E] [IsTopologicalAddGroup E]
-  [ContinuousSMul 𝕜 E] [LocallyConvexSpace ℝ E]
+variable [AddCommGroup E] [Module ℝ E] [Module 𝕜 E] [IsScalarTower ℝ 𝕜 E] {c : ConvexCone ℝ E}
+
+/-- Let `φ : E → ℝ` be a positively homogeneous function on a pointed convex cone `c`. If
+`l : E →L[𝕜] 𝕜` and `b : ℝ` satisfy `re ∘ l + b ≤ φ` on `c`, then `re ∘ l ≤ φ` on `c` and `b ≤ 0`.
+This is an auxiliary lemma used in the proof of `convexCone_sSup_linear_eq.` -/
+lemma _root_.linear_le_and_nonpos_of_affine_le (hcp : c.Pointed)
+    (hph : ∀ x ∈ c, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) {l : E →L[𝕜] 𝕜} {b : ℝ}
+    (hlb : c.carrier.restrict (re ∘ l) + const c.carrier b ≤ c.carrier.restrict φ) :
+    c.carrier.restrict (re ∘ l) ≤ c.carrier.restrict φ ∧ b ≤ 0 := by
+  refine ⟨fun z => ?_, ?_⟩
+  · suffices ∀ᶠ μ in atTop, re (l z) + b / μ ≤ φ z from
+      have ht : Tendsto (fun μ => re (l z) + b / μ) atTop (𝓝 (re (l z))) := by
+        simpa using (tendsto_id.const_div_atTop b).const_add (re (l z))
+      le_of_tendsto_of_tendsto ht (tendsto_const_nhds) this
+    filter_upwards [hph z z.2, Ioi_mem_atTop 0] with μ hμ he
+    have : μ ≠ 0 := by grind
+    calc
+    _ = (re (l (μ • z)) + b) / μ := by simp [field, real_smul_eq_coe_mul]
+    _ ≤ φ (μ • z) / μ := by
+      gcongr
+      · grind
+      have := hlb ⟨μ • z.1, c.smul_mem' (by norm_cast) z.2⟩
+      simp_all
+    _ = φ z := by simp [field, hμ]
+  · calc
+    _ = (re ∘ l) 0 + b := by simp
+    _ ≤ φ 0 := hlb ⟨0, hcp⟩
+    _ = 0 := by
+      obtain ⟨n, hn⟩ := ((hph 0 hcp).and (Ioi_mem_atTop 1)).exists
+      have : (n - 1) * φ 0 = 0 := by simp at hn; grind
+      grind
+
+variable [IsTopologicalAddGroup E] [ContinuousSMul 𝕜 E] [LocallyConvexSpace ℝ E]
 
 /-- Let `φ : E → ℝ` be a convex and lower-semicontinuous function on a closed convex subset `s`. For
 any point `x ∈ s` and `a < φ x`, there exists a continuous affine linear function `f` in `E` such
@@ -106,6 +139,25 @@ theorem sSup_affine_eq (hsc : IsClosed s)
     obtain ⟨l, c, hlc⟩ := exists_affine_le_of_lt (𝕜 := 𝕜) x.2 hz.2 hsc hφc hφcv
     exact ⟨z, hlc.2 ▸ ⟨⟨s.restrict (re ∘ l) + const s c, hlc.1, l, c, rfl⟩, rfl⟩, hz.1⟩
 
+/-- A function `φ : E → ℝ` that is convex, lower-semicontinuous, and positively homogeneous
+on a closed, convex, and pointed cone `c` is the supremum of a family of functions that are the
+restrictions to `s` of continuous linear forms in `E`. -/
+theorem convexCone_sSup_linear_eq (hsc : IsClosed c.carrier)
+    (hcp : c.Pointed) (hφc : LowerSemicontinuousOn φ c)
+    (hφcv : ConvexOn ℝ c φ) (hph : ∀ x ∈ c, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    sSup {f | f ≤ c.carrier.restrict φ ∧ ∃ l : E →L[𝕜] 𝕜, f = c.carrier.restrict (re ∘ l)} =
+      c.carrier.restrict φ := by
+  refine trans ?_ (hφcv.sSup_affine_eq (𝕜 := 𝕜) hsc hφc)
+  ext x
+  refine csSup_eq_csSup_of_forall_exists_le (fun r ⟨f, hf⟩ => ⟨f.1 x, ?_⟩) (fun r ⟨f, hf⟩ => ?_)
+  · refine ⟨⟨⟨f.1, f.2.1, ?_⟩, by simp⟩, by subst hf; rfl⟩
+    obtain ⟨l, hl⟩ := f.2.2
+    exact ⟨l, 0, by simp [hl]⟩
+  · obtain ⟨l, b, hlb⟩ := f.2.2
+    have := linear_le_and_nonpos_of_affine_le hcp hph (hlb ▸ f.2.1)
+    refine ⟨re (l x), ⟨⟨c.carrier.restrict (re ∘ l), this.1, ⟨l, rfl⟩⟩, rfl⟩, ?_⟩
+    simpa [← hf, hlb] using this.2
+
 /-- The countable version of `sSup_affine_eq`. -/
 theorem sSup_of_countable_affine_eq [HereditarilyLindelofSpace E] (hsc : IsClosed s)
     (hφc : LowerSemicontinuousOn φ s) (hφcv : ConvexOn ℝ s φ) :
@@ -129,6 +181,33 @@ theorem sSup_of_countable_affine_eq [HereditarilyLindelofSpace E] (hsc : IsClose
     by_contra!
     grind [(isLUB_empty_iff.1 (this ▸ h𝓕'.2.2)) (fun x : s => φ x - 1) ⟨hs.some, hs.some_mem⟩]
   · use ∅; simp [restrict_def]; grind
+
+/-- The countable version of `convexCone_sSup_linear_eq`. -/
+theorem convexCone_sSup_of_countable_linear_eq [HereditarilyLindelofSpace E]
+    (hsc : IsClosed c.carrier) (hcp : c.Pointed) (hφc : LowerSemicontinuousOn φ c)
+    (hφcv : ConvexOn ℝ c φ) (hph : ∀ x ∈ c, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    ∃ 𝓕' : Set (c → ℝ), 𝓕'.Countable ∧ sSup 𝓕' = c.carrier.restrict φ ∧
+      ∀ f ∈ 𝓕', f ≤ c.carrier.restrict φ ∧ ∃ l : E →L[𝕜] 𝕜, f = c.carrier.restrict (re ∘ l) := by
+  by_cases! hc : c.carrier.Nonempty
+  · let 𝓕 := {f | f ≤ c.carrier.restrict φ ∧ ∃ l : E →L[𝕜] 𝕜, f = c.carrier.restrict (re ∘ l)}
+    have hl : IsLUB 𝓕 (c.carrier.restrict φ) := by
+      refine (hφcv.convexCone_sSup_linear_eq (𝕜 := 𝕜) hsc hcp hφc hph) ▸ isLUB_csSup ?_ ?_
+      · obtain ⟨l, b, hlb⟩ := exists_affine_le_of_lt (𝕜 := 𝕜) hc.some_mem
+          (by grind : φ hc.some - 1 < φ (⟨hc.some, hc.some_mem⟩ : c.carrier)) hsc hφc hφcv
+        refine ⟨c.carrier.restrict (re ∘ l), ?_, l, rfl⟩
+        exact (linear_le_and_nonpos_of_affine_le hcp hph hlb.1).1
+      · exact (bddAbove_def.2 ⟨φ ∘ Subtype.val, fun y hy => hy.1⟩)
+    have hr (f) (hf : f ∈ 𝓕) : LowerSemicontinuous f := by
+      obtain ⟨l, hll⟩ := hf.2
+      exact Continuous.lowerSemicontinuous (hll ▸ by fun_prop)
+    obtain ⟨𝓕', h𝓕'⟩ := exists_countable_lowerSemicontinuous_isLUB hr hl
+    refine ⟨𝓕', h𝓕'.2.1, h𝓕'.2.2.csSup_eq ?_, fun f hf => h𝓕'.1 hf⟩
+    by_contra!
+    grind [(isLUB_empty_iff.1 (this ▸ h𝓕'.2.2)) (fun x : c => φ x - 1) ⟨hc.some, hc.some_mem⟩]
+  · use ∅
+    have := isEmpty_coe_sort.2 hc
+    simp [restrict_def]
+    grind
 
 /-- The sequential version of `sSup_of_countable_affine_eq`. -/
 theorem sSup_of_nat_affine_eq [HereditarilyLindelofSpace E] (hsc : IsClosed s)
@@ -154,6 +233,31 @@ theorem sSup_of_nat_affine_eq [HereditarilyLindelofSpace E] (hsc : IsClosed s)
       have : s = ∅ := by have := congrFun h𝓕'.2.1 x; simp_all
       grind
 
+/-- The sequential version of `convexCone_sSup_of_countable_linear_eq`. -/
+theorem convexCone_sSup_of_nat_linear_eq [HereditarilyLindelofSpace E] (hsc : IsClosed c.carrier)
+    (hcp : c.Pointed) (hφc : LowerSemicontinuousOn φ c) (hφcv : ConvexOn ℝ c φ)
+    (hph : ∀ x ∈ c, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    ∃ l : ℕ → E →L[𝕜] 𝕜,  (∀ i, c.carrier.restrict (re ∘ (l i)) ≤ c.carrier.restrict φ) ∧
+      ⨆ i, c.carrier.restrict (re ∘ (l i)) = c.carrier.restrict φ := by
+  obtain ⟨𝓕', h𝓕'⟩ := hφcv.convexCone_sSup_of_countable_linear_eq (𝕜 := 𝕜) hsc hcp hφc hph
+  by_cases! he : 𝓕'.Nonempty
+  · obtain ⟨f, hf⟩ := h𝓕'.1.exists_eq_range he
+    have (i : ℕ) : ∃ (l : E →L[𝕜] 𝕜), f i = c.carrier.restrict (re ∘ l) := by simp_all
+    choose l hl using this
+    refine ⟨l, fun i => (hl i) ▸ (h𝓕'.2.2 (f i) (hf ▸ mem_range_self i)).1, ?_⟩
+    calc
+    _ = ⨆ i, f i := by congr with i x; exact congrFun (hl i).symm x
+    _ = _ := by rw [← sSup_range, ← hf, h𝓕'.2.1]
+  · by_cases! hsφ : c.carrier.restrict φ = 0
+    · refine ⟨fun _ => 0, fun i => ?_, ?_⟩
+      · simp [hsφ, restrict_def]; rfl
+      · ext x
+        have := congrFun hsφ x
+        simp_all
+    · obtain ⟨x, hx⟩ := Function.ne_iff.1 hsφ
+      have : c.carrier = ∅ := by have := congrFun h𝓕'.2.1 x; simp_all
+      grind
+
 /-- A function `φ : E → ℝ` that is convex and lower-semicontinuous is the supremum of a family of
 of continuous affine linear functions. -/
 theorem univ_sSup_affine_eq (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn ℝ univ φ) :
@@ -177,6 +281,28 @@ theorem univ_sSup_affine_eq (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn �
     congrArg (fun g => g ∘ (Equiv.Set.univ E).symm) this
   _ = φ := by ext; simp
 
+/-- A function `φ : E → ℝ` that is convex, lower-semicontinuous, and positively homogeneous is the
+supremum of a family of continuous linear forms in `E`. -/
+theorem univ_sSup_linear_eq (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn ℝ univ φ)
+    (hph : ∀ x, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    sSup {f | f ≤ φ ∧ ∃ l : E →L[𝕜] 𝕜, f = re ∘ l} = φ := by
+  refine trans ?_ (hφcv.univ_sSup_affine_eq (𝕜 := 𝕜) hφc)
+  ext x
+  refine csSup_eq_csSup_of_forall_exists_le (fun r ⟨f, hf⟩ => ⟨f.1 x, ?_⟩) (fun r ⟨f, hf⟩ => ?_)
+  · refine ⟨⟨⟨f.1, f.2.1, ?_⟩, by simp⟩, by subst hf; rfl⟩
+    obtain ⟨l, hl⟩ := f.2.2
+    exact ⟨l, by simp [hl]⟩
+  · obtain ⟨l, b, hlb⟩ := f.2.2
+    have hp : ∀ x ∈ (⊤ : ConvexCone ℝ E), ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x := by simp [hph]
+    have hq : ((⊤ : ConvexCone ℝ E) : Set E).restrict (⇑re ∘ ⇑l) + const (⊤ : ConvexCone ℝ E) b ≤
+      ((⊤ : ConvexCone ℝ E) : Set E).restrict φ := by
+      intro x
+      have := congrFun hlb x ▸ f.2.1 x
+      simp_all
+    have := linear_le_and_nonpos_of_affine_le ConvexCone.mem_top hp hq
+    refine ⟨re (l x), ⟨⟨re ∘ l, fun x => this.1 ⟨x, mem_univ x⟩, ⟨l, rfl⟩⟩, rfl⟩, ?_⟩
+    simpa [← hf, hlb] using this.2
+
 /-- The countable version of `univ_sSup_affine_eq`. -/
 theorem univ_sSup_of_countable_affine_eq [HereditarilyLindelofSpace E]
     (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn ℝ univ φ) :
@@ -193,6 +319,34 @@ theorem univ_sSup_of_countable_affine_eq [HereditarilyLindelofSpace E]
   have hr (f) (hf : f ∈ 𝓕) : LowerSemicontinuous f := by
     obtain ⟨l, c, hlc⟩ := hf.2
     exact Continuous.lowerSemicontinuous (hlc ▸ by fun_prop)
+  obtain ⟨𝓕', h𝓕'⟩ := exists_countable_lowerSemicontinuous_isLUB hr hl
+  refine ⟨𝓕', h𝓕'.2.1, h𝓕'.2.2.csSup_eq ?_, fun f hf => h𝓕'.1 hf⟩
+  by_contra!
+  grind [(isLUB_empty_iff.1 (this ▸ h𝓕'.2.2)) (fun x => φ x - 1) 0]
+
+/-- The countable version of `univ_sSup_linear_eq`. -/
+theorem univ_sSup_of_countable_linear_eq [HereditarilyLindelofSpace E]
+    (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn ℝ univ φ)
+    (hph : ∀ x, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    ∃ 𝓕' : Set (E → ℝ), 𝓕'.Countable ∧ sSup 𝓕' = φ ∧ ∀ f ∈ 𝓕', f ≤ φ ∧
+      ∃ l : E →L[𝕜] 𝕜, f = re ∘ l := by
+  let 𝓕 := {f | f ≤ φ ∧ ∃ l : E →L[𝕜] 𝕜, f = re ∘ l}
+  have hl : IsLUB 𝓕 φ := by
+    refine (hφcv.univ_sSup_linear_eq (𝕜 := 𝕜) hφc hph) ▸ isLUB_csSup ?_ ?_
+    · obtain ⟨l, b, hlb⟩ := exists_affine_le_of_lt (𝕜 := 𝕜) (@mem_univ E 0)
+        (by grind : φ 0 - 1 < φ (⟨0, @mem_univ E 0⟩ : univ)) isClosed_univ
+        (lowerSemicontinuousOn_univ_iff.2 hφc) hφcv
+      refine ⟨re ∘ l, fun x => ?_, l, rfl⟩
+      have hp : ∀ x ∈ (⊤ : ConvexCone ℝ E), ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x := by simp [hph]
+      have hq : ((⊤ : ConvexCone ℝ E) : Set E).restrict (⇑re ∘ ⇑l) + const (⊤ : ConvexCone ℝ E) b ≤
+        ((⊤ : ConvexCone ℝ E) : Set E).restrict φ := by
+        intro x
+        grind [hlb.1 ⟨x, mem_univ x⟩]
+      grind [(linear_le_and_nonpos_of_affine_le ConvexCone.mem_top hp hq).1 ⟨x, mem_univ x⟩]
+    · exact (bddAbove_def.2 ⟨φ, fun y hy => hy.1⟩)
+  have hr (f) (hf : f ∈ 𝓕) : LowerSemicontinuous f := by
+    obtain ⟨l, hll⟩ := hf.2
+    exact Continuous.lowerSemicontinuous (hll ▸ by fun_prop)
   obtain ⟨𝓕', h𝓕'⟩ := exists_countable_lowerSemicontinuous_isLUB hr hl
   refine ⟨𝓕', h𝓕'.2.1, h𝓕'.2.2.csSup_eq ?_, fun f hf => h𝓕'.1 hf⟩
   by_contra!
@@ -217,12 +371,31 @@ theorem univ_sSup_of_nat_affine_eq [HereditarilyLindelofSpace E]
     · ext x
       simp_all [← congrFun h𝓕'.2.1 x]
 
+/-- The sequential version of `univ_sSup_of_nat_linear_eq`. -/
+theorem univ_sSup_of_nat_linear_eq [HereditarilyLindelofSpace E]
+    (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn ℝ univ φ)
+    (hph : ∀ x, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    ∃ l : ℕ → E →L[𝕜] 𝕜, (∀ i, re ∘ (l i) ≤ φ) ∧ ⨆ i, re ∘ (l i) = φ := by
+  obtain ⟨𝓕', h𝓕'⟩ := hφcv.univ_sSup_of_countable_linear_eq (𝕜 := 𝕜) hφc hph
+  by_cases! he : 𝓕'.Nonempty
+  · obtain ⟨f, hf⟩ := h𝓕'.1.exists_eq_range he
+    have (i : ℕ) : ∃ l : E →L[𝕜] 𝕜, f i = re ∘ l:= by simp_all
+    choose l hl using this
+    refine ⟨l, fun i => (hl i) ▸ (h𝓕'.2.2 (f i) (hf ▸ mem_range_self i)).1, ?_⟩
+    calc
+    _ = ⨆ i, f i := by congr with i x; exact congrFun (hl i).symm x
+    _ = _ := by rw [← sSup_range, ← hf, h𝓕'.2.1]
+  · refine ⟨fun _ => 0, fun i x => ?_, ?_⟩
+    · simp_all [← congrFun h𝓕'.2.1 x]
+    · ext x
+      simp_all [← congrFun h𝓕'.2.1 x]
+
 end RCLike
 
 section Real
 
 variable [AddCommGroup E] [Module ℝ E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
-  [LocallyConvexSpace ℝ E]
+  [LocallyConvexSpace ℝ E] {c : ConvexCone ℝ E}
 
 /-- The real version of `sSup_affine_eq`. -/
 theorem real_sSup_affine_eq (hsc : IsClosed s)
@@ -231,12 +404,28 @@ theorem real_sSup_affine_eq (hsc : IsClosed s)
       s.restrict φ :=
   sSup_affine_eq (𝕜 := ℝ) hsc hφc hφcv
 
+/-- The real version of `convexCone_sSup_linear_eq`. -/
+theorem real_convexCone_sSup_linear_eq (hsc : IsClosed c.carrier)
+    (hcp : c.Pointed) (hφc : LowerSemicontinuousOn φ c)
+    (hφcv : ConvexOn ℝ c φ) (hph : ∀ x ∈ c, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    sSup {f | f ≤ c.carrier.restrict φ ∧ ∃ l : E →L[ℝ] ℝ, f = c.carrier.restrict l} =
+      c.carrier.restrict φ :=
+  convexCone_sSup_linear_eq hsc hcp hφc hφcv hph
+
 /-- The real version of `sSup_of_countable_affine_eq`. -/
 theorem real_sSup_of_countable_affine_eq [HereditarilyLindelofSpace E] (hsc : IsClosed s)
     (hφc : LowerSemicontinuousOn φ s) (hφcv : ConvexOn ℝ s φ) :
     ∃ 𝓕' : Set (s → ℝ), 𝓕'.Countable ∧ sSup 𝓕' = s.restrict φ ∧
       ∀ f ∈ 𝓕', f ≤ s.restrict φ ∧ ∃ (l : E →L[ℝ] ℝ) (c : ℝ), f = s.restrict l + const s c :=
   sSup_of_countable_affine_eq (𝕜 := ℝ) hsc hφc hφcv
+
+/-- The real version of `convexCone_sSup_of_countable_linear_eq`. -/
+theorem real_convexCone_sSup_of_countable_linear_eq [HereditarilyLindelofSpace E]
+    (hsc : IsClosed c.carrier) (hpc : c.Pointed) (hφc : LowerSemicontinuousOn φ c)
+    (hφcv : ConvexOn ℝ c φ) (hph : ∀ x ∈ c, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    ∃ 𝓕' : Set (c → ℝ), 𝓕'.Countable ∧ sSup 𝓕' = c.carrier.restrict φ ∧
+      ∀ f ∈ 𝓕', f ≤ c.carrier.restrict φ ∧ ∃ l : E →L[ℝ] ℝ, f = c.carrier.restrict l :=
+  convexCone_sSup_of_countable_linear_eq hsc hpc hφc hφcv hph
 
 /-- The real version of `sSup_of_nat_affine_eq`. -/
 theorem real_sSup_of_nat_affine_eq [HereditarilyLindelofSpace E] (hsc : IsClosed s)
@@ -246,10 +435,24 @@ theorem real_sSup_of_nat_affine_eq [HereditarilyLindelofSpace E] (hsc : IsClosed
       ⨆ i, s.restrict (l i) + const s (c i) = s.restrict φ :=
   sSup_of_nat_affine_eq (𝕜 := ℝ) hsc hφc hφcv
 
+/-- The real version of `convexCone_sSup_of_nat_linear_eq`. -/
+theorem real_convexCone_sSup_of_nat_linear_eq [HereditarilyLindelofSpace E]
+    (hsc : IsClosed c.carrier) (hpc : c.Pointed) (hφc : LowerSemicontinuousOn φ c)
+    (hφcv : ConvexOn ℝ c φ) (hph : ∀ x ∈ c, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    ∃ l : ℕ → E →L[ℝ] ℝ, (∀ i, c.carrier.restrict (l i) ≤ c.carrier.restrict φ) ∧
+      ⨆ i, c.carrier.restrict (l i) = c.carrier.restrict φ :=
+  convexCone_sSup_of_nat_linear_eq hsc hpc hφc hφcv hph
+
 /-- The real version of `univ_sSup_affine_eq`. -/
 theorem real_univ_sSup_affine_eq (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn ℝ univ φ) :
     sSup {f | f ≤ φ ∧ ∃ (l : E →L[ℝ] ℝ) (c : ℝ), f = l + const E c} = φ :=
   univ_sSup_affine_eq (𝕜 := ℝ) hφc hφcv
+
+/-- The real version of `univ_sSup_linear_eq`. -/
+theorem real_univ_sSup_linear_eq (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn ℝ univ φ)
+    (hph : ∀ x, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    sSup {f | f ≤ φ ∧ ∃ l : E →L[ℝ] ℝ, f = l} = φ :=
+  univ_sSup_linear_eq hφc hφcv hph
 
 /-- The real version of `univ_sSup_of_countable_affine_eq`. -/
 theorem real_univ_sSup_of_countable_affine_eq [HereditarilyLindelofSpace E]
@@ -258,12 +461,26 @@ theorem real_univ_sSup_of_countable_affine_eq [HereditarilyLindelofSpace E]
       ∀ f ∈ 𝓕', f ≤ φ ∧ ∃ (l : E →L[ℝ] ℝ) (c : ℝ), f = l + const E c :=
   univ_sSup_of_countable_affine_eq (𝕜 := ℝ) hφc hφcv
 
+/-- The real version of `univ_sSup_of_countable_linear_eq`. -/
+theorem real_univ_sSup_of_countable_linear_eq [HereditarilyLindelofSpace E]
+    (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn ℝ univ φ)
+    (hph : ∀ x, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    ∃ 𝓕' : Set (E → ℝ), 𝓕'.Countable ∧ sSup 𝓕' = φ ∧ ∀ f ∈ 𝓕', f ≤ φ ∧ ∃ l : E →L[ℝ] ℝ, f = l :=
+  univ_sSup_of_countable_linear_eq hφc hφcv hph
+
 /-- The real version of `univ_sSup_of_nat_affine_eq`. -/
 theorem real_univ_sSup_of_nat_affine_eq [HereditarilyLindelofSpace E]
     (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn ℝ univ φ) :
     ∃ (l : ℕ → E →L[ℝ] ℝ) (c : ℕ → ℝ), (∀ i, (l i) + const E (c i) ≤ φ) ∧
       ⨆ i, (l i) + const E (c i) = φ :=
   univ_sSup_of_nat_affine_eq (𝕜 := ℝ) hφc hφcv
+
+/-- The real version of `univ_sSup_of_nat_linear_eq`. -/
+theorem real_univ_sSup_of_nat_linear_eq [HereditarilyLindelofSpace E]
+    (hφc : LowerSemicontinuous φ) (hφcv : ConvexOn ℝ univ φ)
+    (hph : ∀ x, ∀ᶠ μ in atTop, φ (μ • x) = μ * φ x) :
+    ∃ l : ℕ → E →L[ℝ] ℝ, (∀ i, l i ≤ φ) ∧ ⨆ i, (l i).toFun = φ :=
+  univ_sSup_of_nat_linear_eq hφc hφcv hph
 
 end Real
 
