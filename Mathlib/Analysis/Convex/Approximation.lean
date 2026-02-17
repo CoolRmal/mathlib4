@@ -123,7 +123,7 @@ theorem sSup_of_countable_affine_eq [HereditarilyLindelofSpace E] (hsc : IsClose
       · exact (bddAbove_def.2 ⟨φ ∘ Subtype.val, fun y hy => hy.1⟩)
     have hr (f) (hf : f ∈ 𝓕) : LowerSemicontinuous f := by
       obtain ⟨l, c, hlc⟩ := hf.2
-      exact Continuous.lowerSemicontinuous (hlc ▸ Continuous.add (by fun_prop) (by fun_prop))
+      exact Continuous.lowerSemicontinuous (hlc ▸ by fun_prop)
     obtain ⟨𝓕', h𝓕'⟩ := exists_countable_lowerSemicontinuous_isLUB hr hl
     refine ⟨𝓕', h𝓕'.2.1, h𝓕'.2.2.csSup_eq ?_, fun f hf => h𝓕'.1 hf⟩
     by_contra!
