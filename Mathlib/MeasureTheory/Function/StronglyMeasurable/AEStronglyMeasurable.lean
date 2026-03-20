@@ -328,6 +328,11 @@ protected theorem pow [Monoid β] [ContinuousMul β] (hf : AEStronglyMeasurable[
     AEStronglyMeasurable[m] (f ^ n) μ :=
   ⟨hf.mk f ^ n, hf.stronglyMeasurable_mk.pow _, hf.ae_eq_mk.pow_const _⟩
 
+@[fun_prop]
+theorem rpow_const {f : α → ℝ} (hf : AEStronglyMeasurable f μ) {c : ℝ} (hc : 0 ≤ c) :
+    AEStronglyMeasurable (fun x => f x ^ c) μ :=
+  (Real.continuous_rpow_const hc).comp_aestronglyMeasurable hf
+
 @[to_additive (attr := fun_prop)]
 protected theorem const_smul {𝕜} [SMul 𝕜 β] [ContinuousConstSMul 𝕜 β]
     (hf : AEStronglyMeasurable[m] f μ) (c : 𝕜) : AEStronglyMeasurable[m] (c • f) μ :=

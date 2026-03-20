@@ -524,11 +524,18 @@ theorem integral_eq_lintegral_of_nonneg_ae {f : α → ℝ} (hf : 0 ≤ᵐ[μ] f
       rw [Real.norm_eq_abs, abs_of_nonneg h]
     rw [this, hfi, toReal_top]
 
+theorem integral_norm_rpow_eq_lintegral_enorm_rpow {P : Type*} [NormedAddCommGroup P] {f : α → P}
+    (hf : AEStronglyMeasurable f μ) {p : ℝ} (hp : 0 ≤ p) :
+    ∫ x, ‖f x‖ ^ p ∂μ = (∫⁻ x, ‖f x‖ₑ ^ p ∂μ).toReal := by
+  rw [integral_eq_lintegral_of_nonneg_ae _ (hf.norm.rpow_const hp)]
+  · congr with a
+    rw [← ENNReal.ofReal_rpow_of_nonneg, ofReal_norm_eq_enorm]
+    <;> positivity
+  · filter_upwards with a; positivity
+
 theorem integral_norm_eq_lintegral_enorm {P : Type*} [NormedAddCommGroup P] {f : α → P}
     (hf : AEStronglyMeasurable f μ) : ∫ x, ‖f x‖ ∂μ = (∫⁻ x, ‖f x‖ₑ ∂μ).toReal := by
-  rw [integral_eq_lintegral_of_nonneg_ae _ hf.norm]
-  · simp_rw [ofReal_norm_eq_enorm]
-  · filter_upwards; simp_rw [Pi.zero_apply, norm_nonneg, imp_true_iff]
+  simpa using integral_norm_rpow_eq_lintegral_enorm_rpow hf zero_le_one
 
 theorem ofReal_integral_norm_eq_lintegral_enorm {P : Type*} [NormedAddCommGroup P] {f : α → P}
     (hf : Integrable f μ) : ENNReal.ofReal (∫ x, ‖f x‖ ∂μ) = ∫⁻ x, ‖f x‖ₑ ∂μ := by

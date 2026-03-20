@@ -6,6 +6,7 @@ Authors: Rémy Degenne, Sébastien Gouëzel
 module
 
 public import Mathlib.Analysis.Normed.Module.Basic
+public import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
 public import Mathlib.MeasureTheory.Function.SimpleFuncDense
 
 /-!
@@ -410,6 +411,11 @@ theorem const_mul [Mul β] [ContinuousMul β] (hf : StronglyMeasurable f) (c : �
 protected theorem pow [Monoid β] [ContinuousMul β] (hf : StronglyMeasurable f) (n : ℕ) :
     StronglyMeasurable (f ^ n) :=
   ⟨fun k => hf.approx k ^ n, fun x => (hf.tendsto_approx x).pow n⟩
+
+@[fun_prop]
+theorem rpow_const {f : α → ℝ} (hf : StronglyMeasurable f) {c : ℝ} (hc : 0 ≤ c) :
+    StronglyMeasurable (fun x => f x ^ c) :=
+  (Real.continuous_rpow_const hc).comp_stronglyMeasurable hf
 
 @[to_additive (attr := fun_prop)]
 protected theorem inv [Inv β] [ContinuousInv β] (hf : StronglyMeasurable f) :
@@ -1287,3 +1293,5 @@ theorem stronglyMeasurable_uncurry_of_continuous_of_stronglyMeasurable {α β ι
   exact ((t_sf n).measurable.comp measurable_fst).subtype_mk
 
 end MeasureTheory
+
+#min_imports
