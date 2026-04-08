@@ -6,7 +6,10 @@ Authors: Yongxi Lin
 module
 
 public import Mathlib.MeasureTheory.Constructions.BorelSpace.Metric
+public import Mathlib.MeasureTheory.Constructions.HaarToSphere
+public import Mathlib.MeasureTheory.Group.Measure
 public import Mathlib.MeasureTheory.Integral.Lebesgue.Add
+public import Mathlib.MeasureTheory.Measure.Hausdorff
 public import Mathlib.MeasureTheory.Measure.Regular
 
 import Mathlib.MeasureTheory.Measure.Prod
@@ -192,5 +195,43 @@ theorem eq_smul (μ ν : Measure X) [OpensMeasurableSpace X]
 end UniformlyDistributed
 
 end Measure
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
+  [BorelSpace E] [FiniteDimensional ℝ E]
+
+
+instance (d : ℝ) : OuterRegular (μH[d] : Measure E) := by sorry
+
+instance : OuterRegular (μH[Module.finrank ℝ E - 1].comap Subtype.val :
+    Measure (sphere (0 : E) 1)) :=
+  OuterRegular.subtype _ isClosed_sphere.measurableSet
+
+instance : UniformlyDistributed (μH[Module.finrank ℝ E - 1].comap Subtype.val :
+    Measure (sphere (0 : E) 1)) := by
+  sorry
+
+open scoped Pointwise in
+instance {m : Measure E} [m.IsAddHaarMeasure] :
+    UniformlyDistributed m.toSphere := by
+  constructor
+  intro r hr x y
+  have hf : Measurable (fun z ↦ (y : E) - (x : E) + z) := by sorry
+  have hs : MeasurableSet (Ioo (0 : ℝ) 1 • (ball (x : E) r ∩ sphere 0 1)) := by sorry
+  simp only [Measure.toSphere_apply' _ measurableSet_ball, Subtype.image_ball, setOf_mem_eq]
+  simp only [← image2_smul, image2, preimage]
+  simp?
+  refine congrArg (_ * ·) ?_
+  sorry
+  sorry
+  sorry
+
+/-- The restriction of the `n`-dimensional Hausdorff measure onto an `n`-dimensional sphere
+coincides with the spherical measure up to a constant.
+
+#TODO: Show that this constant is 1 by using the coarea formula. -/
+theorem hausdorffMeasure_eq_addHaarMeasure_toSphere {m : Measure E} [m.IsAddHaarMeasure] :
+    ∃ c : ℝ≥0, (μH[Module.finrank ℝ E - 1].comap Subtype.val : Measure (sphere (0 : E) 1)) =
+      c • m.toSphere :=
+  UniformlyDistributed.eq_smul _ _
 
 end MeasureTheory
