@@ -196,44 +196,58 @@ end UniformlyDistributed
 
 end Measure
 
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
-  [BorelSpace E] [FiniteDimensional ℝ E]
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
+  [MeasurableSpace E] [BorelSpace E]
 
-instance (d : ℝ) : InnerRegularCompactLTTop (μH[d] : Measure E) := by sorry
+instance {d : ℝ} : OuterRegular (μH[d] : Measure E) := by sorry
 
-instance (d : ℝ) : Regular (μH[d] : Measure E) := by
-  refine InnerRegularCompactLTTop.instRegularOfBorelSpaceOfR1SpaceOfIsFiniteMeasure
-
-instance : OuterRegular (μH[Module.finrank ℝ E - 1].comap Subtype.val :
+instance {d : ℝ} : OuterRegular (μH[d].comap Subtype.val :
     Measure (sphere (0 : E) 1)) :=
   OuterRegular.subtype _ isClosed_sphere.measurableSet
 
-instance : UniformlyDistributed (μH[Module.finrank ℝ E - 1].comap Subtype.val :
-    Measure (sphere (0 : E) 1)) := by
+instance {d : ℝ} : UniformlyDistributed (μH[d].comap Subtype.val : Measure (sphere (0 : E) 1)) := by
   sorry
 
 open scoped Pointwise in
-instance {m : Measure E} [m.IsAddHaarMeasure] :
-    UniformlyDistributed m.toSphere := by
+instance [Fact (0 < Module.finrank ℝ E)] : UniformlyDistributed (volume : Measure E).toSphere := by
   constructor
-  intro r hr x y
-  have hf : Measurable (fun z ↦ (y : E) - (x : E) + z) := by sorry
-  have hs : MeasurableSet (Ioo (0 : ℝ) 1 • (ball (x : E) r ∩ sphere 0 1)) := by sorry
-  simp only [Measure.toSphere_apply' _ measurableSet_ball, Subtype.image_ball, setOf_mem_eq]
-  simp only [← image2_smul, image2, preimage]
-  simp?
-  refine congrArg (_ * ·) ?_
-  sorry
-  sorry
-  sorry
+  all_goals
+    intro r hr x
+    simp only [Measure.toSphere_apply' _ measurableSet_ball, Subtype.image_ball,
+      ← image2_smul, image2, mem_Ioo, mem_inter_iff, mem_ball, mem_sphere_iff_norm, sub_zero]
+  · have : (volume : Measure E) = μH[Module.finrank ℝ E] := by sorry
+    rw [this]
+    refine fun y => congrArg (_ * ·) ?_
+    obtain ⟨f, hf⟩ : ∃ f : E ≃ₗᵢ[ℝ] E, f x = y := by sorry
+    rw [← f.isometry.hausdorffMeasure_image (by simp)]
+    congr
+    simp only [image, mem_setOf_eq, exists_exists_and_exists_and_eq_and, map_smul]
+    ext
+    refine ⟨fun ⟨a, ha, b, hb, hb'⟩ => ?_, fun ⟨a, ha, b, hb, hb'⟩ => ?_⟩
+    · refine ⟨a, ha, f b, ⟨?_, ?_⟩, hb'⟩
+      · simpa [← hf] using hb.1
+      · simpa using hb.2
+    · refine ⟨a, ha, f.symm b, ⟨?_, ?_⟩, ?_⟩
+      · simpa [f.apply_eq_iff_eq_symm_apply.1 hf] using hb.1
+      · simpa using hb.2
+      · simpa using hb'
+  · refine ENNReal.mul_pos (ne_of_gt (Nat.cast_pos.2 (fact_iff.1 inferInstance))) ?_
+    refine IsOpen.measure_ne_zero volume ?_ ?_
+    · sorry
+    · exact ⟨(1 / 2 : ℝ) • x, (1 / 2 : ℝ), by grind, x, by simp [hr], rfl⟩
+  · refine ENNReal.mul_lt_top (ENNReal.natCast_lt_top _) ?_
+    refine (isBounded_iff_forall_norm_le.2 ⟨1, fun c hc => ?_⟩).measure_lt_top
+    obtain ⟨a, ha, b, hb, hb'⟩ := hc
+    simp_all [← hb', norm_smul, abs_of_nonneg ha.1.le, ha.2.le]
 
-/-- The restriction of the `n`-dimensional Hausdorff measure onto an `n`-dimensional sphere
+/-- The restriction of the `n - 1`-dimensional Hausdorff measure onto an `n`-dimensional sphere
 coincides with the spherical measure up to a constant.
 
 #TODO: Show that this constant is 1 by using the coarea formula. -/
-theorem hausdorffMeasure_eq_addHaarMeasure_toSphere {m : Measure E} [m.IsAddHaarMeasure] :
+theorem hausdorffMeasure_eq_addHaarMeasure_toSphere (hd : 0 < Module.finrank ℝ E) :
     ∃ c : ℝ≥0, (μH[Module.finrank ℝ E - 1].comap Subtype.val : Measure (sphere (0 : E) 1)) =
-      c • m.toSphere :=
+      c • volume.toSphere :=
+  have : Fact (0 < Module.finrank ℝ E) := Fact.mk hd
   UniformlyDistributed.eq_smul _ _
 
 end MeasureTheory
