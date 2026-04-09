@@ -199,8 +199,10 @@ end Measure
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E]
   [BorelSpace E] [FiniteDimensional ℝ E]
 
+instance (d : ℝ) : InnerRegularCompactLTTop (μH[d] : Measure E) := by sorry
 
-instance (d : ℝ) : OuterRegular (μH[d] : Measure E) := by sorry
+instance (d : ℝ) : Regular (μH[d] : Measure E) := by
+  refine InnerRegularCompactLTTop.instRegularOfBorelSpaceOfR1SpaceOfIsFiniteMeasure
 
 instance : OuterRegular (μH[Module.finrank ℝ E - 1].comap Subtype.val :
     Measure (sphere (0 : E) 1)) :=
