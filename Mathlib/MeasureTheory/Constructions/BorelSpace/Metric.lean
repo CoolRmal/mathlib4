@@ -43,6 +43,10 @@ variable [MeasurableSpace β] {x : α} {ε : ℝ}
 open Metric
 
 @[measurability]
+theorem measurableSet_sphere : MeasurableSet (Metric.sphere x ε) :=
+  Metric.isClosed_sphere.measurableSet
+
+@[measurability]
 theorem measurableSet_ball : MeasurableSet (Metric.ball x ε) :=
   Metric.isOpen_ball.measurableSet
 

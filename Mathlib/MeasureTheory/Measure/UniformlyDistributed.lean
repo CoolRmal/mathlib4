@@ -197,28 +197,48 @@ end UniformlyDistributed
 end Measure
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
-  [MeasurableSpace E] [BorelSpace E]
+  [MeasurableSpace E] [BorelSpace E] {d : ℝ}
 
-instance {d : ℝ} : OuterRegular (μH[d] : Measure E) := by sorry
+instance {d : ℝ} : OuterRegular (μH[d] : Measure E) := sorry
 
 instance {d : ℝ} : OuterRegular (μH[d].comap Subtype.val :
     Measure (sphere (0 : E) 1)) :=
-  OuterRegular.subtype _ isClosed_sphere.measurableSet
+  OuterRegular.subtype _ measurableSet_sphere
 
-instance {d : ℝ} : UniformlyDistributed (μH[d].comap Subtype.val : Measure (sphere (0 : E) 1)) := by
+/-- Hausdorff measure restricted to lower dimensional manifold is finite. -/
+instance : IsFiniteMeasure (μH[Module.finrank ℝ E - 1].comap Subtype.val :
+    Measure (sphere (0 : E) 1)) := by
   sorry
+
+instance [Fact (0 < Module.finrank ℝ E)] :
+    UniformlyDistributed (μH[Module.finrank ℝ E - 1].comap Subtype.val :
+    Measure (sphere (0 : E) 1)) := by
+  constructor
+  all_goals
+    intro r hr x
+  · intro y
+    simp only [(MeasurableEmbedding.subtype_coe measurableSet_sphere).comap_apply,
+      Subtype.image_ball, setOf_mem_eq]
+    obtain ⟨f, hf⟩ : ∃ f : E ≃ₗᵢ[ℝ] E, f x = y :=
+      ⟨Submodule.reflection (ℝ ∙ (x.1 - y.1))ᗮ, Submodule.reflection_sub (by aesop)⟩
+    rw [← f.isometry.hausdorffMeasure_image (Or.inr f.surjective), image_inter f.injective,
+      f.image_ball, hf, f.image_sphere, map_zero]
+  · sorry
+  · finiteness
 
 open scoped Pointwise in
 instance [Fact (0 < Module.finrank ℝ E)] : UniformlyDistributed (volume : Measure E).toSphere := by
   constructor
   all_goals
     intro r hr x
-    simp only [Measure.toSphere_apply' _ measurableSet_ball, Subtype.image_ball,
-      ← image2_smul, image2, mem_Ioo, mem_inter_iff, mem_ball, mem_sphere_iff_norm, sub_zero]
-  · have : (volume : Measure E) = μH[Module.finrank ℝ E] := by sorry
+    simp only [Measure.toSphere_apply' _ measurableSet_ball]
+  · simp only [Subtype.image_ball, ← image2_smul, image2, mem_Ioo, mem_inter_iff, mem_ball,
+      mem_sphere_iff_norm, sub_zero]
+    have : (volume : Measure E) = μH[Module.finrank ℝ E] := by sorry
     rw [this]
     refine fun y => congrArg (_ * ·) ?_
-    obtain ⟨f, hf⟩ : ∃ f : E ≃ₗᵢ[ℝ] E, f x = y := by sorry
+    obtain ⟨f, hf⟩ : ∃ f : E ≃ₗᵢ[ℝ] E, f x = y :=
+      ⟨Submodule.reflection (ℝ ∙ (x.1 - y.1))ᗮ, Submodule.reflection_sub (by aesop)⟩
     rw [← f.isometry.hausdorffMeasure_image (by simp)]
     congr
     simp only [image, mem_setOf_eq, exists_exists_and_exists_and_eq_and, map_smul]
@@ -233,7 +253,7 @@ instance [Fact (0 < Module.finrank ℝ E)] : UniformlyDistributed (volume : Meas
       · simpa using hb'
   · refine ENNReal.mul_pos (ne_of_gt (Nat.cast_pos.2 (fact_iff.1 inferInstance))) ?_
     refine IsOpen.measure_ne_zero volume ?_ ?_
-    · sorry
+    · exact isOpen_Ioo.smul_sphere (by simp) (by simp) isOpen_ball
     · exact ⟨(1 / 2 : ℝ) • x, (1 / 2 : ℝ), by grind, x, by simp [hr], rfl⟩
   · refine ENNReal.mul_lt_top (ENNReal.natCast_lt_top _) ?_
     refine (isBounded_iff_forall_norm_le.2 ⟨1, fun c hc => ?_⟩).measure_lt_top
