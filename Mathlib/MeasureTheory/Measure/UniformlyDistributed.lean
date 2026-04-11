@@ -5,11 +5,11 @@ Authors: Yongxi Lin
 -/
 module
 
+public import Mathlib.Geometry.Euclidean.Volume.Measure
 public import Mathlib.MeasureTheory.Constructions.BorelSpace.Metric
 public import Mathlib.MeasureTheory.Constructions.HaarToSphere
 public import Mathlib.MeasureTheory.Group.Measure
 public import Mathlib.MeasureTheory.Integral.Lebesgue.Add
-public import Mathlib.MeasureTheory.Measure.Hausdorff
 public import Mathlib.MeasureTheory.Measure.Regular
 
 import Mathlib.MeasureTheory.Measure.Prod
@@ -34,7 +34,7 @@ application, we prove that the restriction of the `n - 1`-dimensional Hausdorff 
 
 @[expose] public section
 
-open Filter MeasureTheory Measure Metric Set
+open Filter MeasureTheory Measure Metric Set Module
 
 open scoped ENNReal NNReal Topology
 
@@ -199,19 +199,21 @@ end Measure
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   [MeasurableSpace E] [BorelSpace E] {d : ℝ}
 
-instance {d : ℝ} : OuterRegular (μH[d] : Measure E) := sorry
+instance : OuterRegular (μHE[finrank ℝ E] : Measure E) := by
+  rw [InnerProductSpace.euclideanHausdorffMeasure_eq_volume]
+  infer_instance
 
-instance {d : ℝ} : OuterRegular (μH[d].comap Subtype.val :
+instance : OuterRegular (μHE[finrank ℝ E].comap Subtype.val :
     Measure (sphere (0 : E) 1)) :=
   OuterRegular.subtype _ measurableSet_sphere
 
 /-- Hausdorff measure restricted to lower dimensional manifold is finite. -/
-instance : IsFiniteMeasure (μH[Module.finrank ℝ E - 1].comap Subtype.val :
+instance : IsFiniteMeasure (μHE[finrank ℝ E - 1].comap Subtype.val :
     Measure (sphere (0 : E) 1)) := by
   sorry
 
-instance [Fact (0 < Module.finrank ℝ E)] :
-    UniformlyDistributed (μH[Module.finrank ℝ E - 1].comap Subtype.val :
+instance [Fact (0 < finrank ℝ E)] :
+    UniformlyDistributed (μHE[finrank ℝ E - 1].comap Subtype.val :
     Measure (sphere (0 : E) 1)) := by
   constructor
   all_goals
@@ -221,25 +223,24 @@ instance [Fact (0 < Module.finrank ℝ E)] :
       Subtype.image_ball, setOf_mem_eq]
     obtain ⟨f, hf⟩ : ∃ f : E ≃ₗᵢ[ℝ] E, f x = y :=
       ⟨Submodule.reflection (ℝ ∙ (x.1 - y.1))ᗮ, Submodule.reflection_sub (by aesop)⟩
-    rw [← f.isometry.hausdorffMeasure_image (Or.inr f.surjective), image_inter f.injective,
+    rw [← f.isometry.euclideanHausdorffMeasure_image, image_inter f.injective,
       f.image_ball, hf, f.image_sphere, map_zero]
   · sorry
   · finiteness
 
 open scoped Pointwise in
-instance [Fact (0 < Module.finrank ℝ E)] : UniformlyDistributed (volume : Measure E).toSphere := by
+instance [Fact (0 < finrank ℝ E)] : UniformlyDistributed (volume : Measure E).toSphere := by
   constructor
   all_goals
     intro r hr x
     simp only [Measure.toSphere_apply' _ measurableSet_ball]
   · simp only [Subtype.image_ball, ← image2_smul, image2, mem_Ioo, mem_inter_iff, mem_ball,
       mem_sphere_iff_norm, sub_zero]
-    have : (volume : Measure E) = μH[Module.finrank ℝ E] := by sorry
-    rw [this]
+    rw [← InnerProductSpace.euclideanHausdorffMeasure_eq_volume]
     refine fun y => congrArg (_ * ·) ?_
     obtain ⟨f, hf⟩ : ∃ f : E ≃ₗᵢ[ℝ] E, f x = y :=
       ⟨Submodule.reflection (ℝ ∙ (x.1 - y.1))ᗮ, Submodule.reflection_sub (by aesop)⟩
-    rw [← f.isometry.hausdorffMeasure_image (by simp)]
+    rw [← f.isometry.euclideanHausdorffMeasure_image]
     congr
     simp only [image, mem_setOf_eq, exists_exists_and_exists_and_eq_and, map_smul]
     ext
@@ -264,10 +265,10 @@ instance [Fact (0 < Module.finrank ℝ E)] : UniformlyDistributed (volume : Meas
 coincides with the spherical measure up to a constant.
 
 #TODO: Show that this constant is 1 by using the coarea formula. -/
-theorem hausdorffMeasure_eq_addHaarMeasure_toSphere (hd : 0 < Module.finrank ℝ E) :
-    ∃ c : ℝ≥0, (μH[Module.finrank ℝ E - 1].comap Subtype.val : Measure (sphere (0 : E) 1)) =
+theorem hausdorffMeasure_eq_addHaarMeasure_toSphere (hd : 0 < finrank ℝ E) :
+    ∃ c : ℝ≥0, (μHE[finrank ℝ E - 1].comap Subtype.val : Measure (sphere (0 : E) 1)) =
       c • volume.toSphere :=
-  have : Fact (0 < Module.finrank ℝ E) := Fact.mk hd
+  have : Fact (0 < finrank ℝ E) := Fact.mk hd
   UniformlyDistributed.eq_smul _ _
 
 end MeasureTheory
