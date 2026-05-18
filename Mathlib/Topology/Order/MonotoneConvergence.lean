@@ -272,6 +272,22 @@ theorem Antitone.ge_of_tendsto [TopologicalSpace α] [Preorder α] [OrderClosedT
     f b ≤ a :=
   hf.dual_right.le_of_tendsto ha b
 
+@[to_dual]
+theorem monotone_of_tendsto_of_eventually {ι : Type*} {l : Filter ι} [NeBot l] [Preorder α]
+    [TopologicalSpace β] [Preorder β] [OrderClosedTopology β] {F : ι → α → β} {f : α → β}
+    (hF_mono : ∀ ⦃a b⦄, a ≤ b → ∀ᶠ i in l, F i a ≤ F i b)
+    (hF_tendsto : ∀ a, Tendsto (fun i ↦ F i a) l (𝓝 (f a))) :
+    Monotone f :=
+  fun a b hab => tendsto_le_of_eventuallyLE (hF_tendsto a) (hF_tendsto b) (hF_mono hab)
+
+@[to_dual]
+theorem monotone_of_tendsto {ι : Type*} {l : Filter ι} [NeBot l] [Preorder α]
+    [TopologicalSpace β] [Preorder β] [OrderClosedTopology β] {F : ι → α → β} {f : α → β}
+    (hF_mono : ∀ i, Monotone (F i)) (hF_tendsto : ∀ a, Tendsto (fun i ↦ F i a) l (𝓝 (f a))) :
+    Monotone f :=
+  monotone_of_tendsto_of_eventually
+    (fun hab ↦ Eventually.of_forall fun i ↦ hF_mono i hab) hF_tendsto
+
 theorem isLUB_of_tendsto_atTop [TopologicalSpace α] [Preorder α] [OrderClosedTopology α]
     [Preorder β] [IsDirectedOrder β] [Nonempty β] {f : β → α} {a : α} (hf : Monotone f)
     (ha : Tendsto f atTop (𝓝 a)) : IsLUB (Set.range f) a := by
