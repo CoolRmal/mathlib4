@@ -80,16 +80,7 @@ variable {p}
 
 instance [Subsingleton M] : Subsingleton (M ⧸ p) := by simpa using Subsingleton.elim ..
 
-@[deprecated Quotient.nontrivial_iff (since := "2025-11-02")]
-theorem nontrivial_of_lt_top (h : p < ⊤) : Nontrivial (M ⧸ p) := Quotient.nontrivial_iff.mpr h.ne
-
-@[deprecated Quotient.nontrivial_iff (since := "2025-11-02")]
-theorem nontrivial_of_ne_top (h : p ≠ ⊤) : Nontrivial (M ⧸ p) := Quotient.nontrivial_iff.mpr h
-
 end Quotient
-
-@[deprecated (since := "2025-11-02")]
-alias subsingleton_quotient_iff_eq_top := Quotient.subsingleton_iff
 
 instance QuotientBot.infinite [Infinite M] : Infinite (M ⧸ (⊥ : Submodule R M)) :=
   Infinite.of_injective Submodule.Quotient.mk fun _x _y h =>
@@ -235,6 +226,9 @@ theorem map_liftQ [RingHomSurjective τ₁₂] (f : M →ₛₗ[τ₁₂] M₂) 
 
 theorem ker_liftQ (f : M →ₛₗ[τ₁₂] M₂) (h) : ker (p.liftQ f h) = (ker f).map (mkQ p) :=
   comap_liftQ _ _ _ _
+
+lemma ker_mapQ (f : M →ₛₗ[τ₁₂] M₂) (h) : ker (p.mapQ q f h) = (comap f q).map p.mkQ := by
+  simp [Submodule.mapQ, Submodule.ker_liftQ, LinearMap.ker_comp]
 
 theorem range_liftQ [RingHomSurjective τ₁₂] (f : M →ₛₗ[τ₁₂] M₂) (h) :
     range (p.liftQ f h) = range f := by simpa only [range_eq_map] using map_liftQ _ _ _ _
