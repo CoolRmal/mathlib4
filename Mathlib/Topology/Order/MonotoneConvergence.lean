@@ -34,6 +34,29 @@ open scoped Topology
 
 variable {α β : Type*}
 
+section
+
+variable [Preorder α] [TopologicalSpace β] [OrderClosedTopology β]
+  {ι : Type*} {l : Filter ι} {f : ι → α → β} {g : α → β}
+
+/-- If a family of functions is eventually monotone and converges pointwise, then the limit
+function is monotone. -/
+theorem monotone_of_eventually_monotone_of_tendsto
+    (hmono : ∀ᶠ n in l, Monotone (f n))
+    (hlim : ∀ x, Tendsto (fun n ↦ f n x) l (𝓝 (g x))) :
+    Monotone g := by
+  intro a b hab
+  exact le_of_tendsto (hlim a) (hlim b) <| hmono.mono fun _ hn ↦ hn hab
+
+/-- If a family of monotone functions converges pointwise, then the limit function is monotone. -/
+theorem monotone_of_tendsto
+    (hmono : ∀ n, Monotone (f n))
+    (hlim : ∀ x, Tendsto (fun n ↦ f n x) l (𝓝 (g x))) :
+    Monotone g :=
+  monotone_of_eventually_monotone_of_tendsto (Filter.Eventually.of_forall hmono) hlim
+
+end
+
 /-- We say that `α` is a `SupConvergenceClass` if the following holds. Let `f : ι → α` be a
 monotone function, let `a : α` be a least upper bound of `Set.range f`. Then `f x` tends to `𝓝 a`
 as `x → ∞` (formally, at the filter `Filter.atTop`). We require this for `ι = (s : Set α)`,
