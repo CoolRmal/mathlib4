@@ -5,11 +5,9 @@ Authors: Yongxi Lin
 -/
 module
 
-public import Mathlib.Analysis.Asymptotics.TVS
-public import Mathlib.MeasureTheory.Measure.Decomposition.IntegralRNDeriv
-public import Mathlib.MeasureTheory.Measure.Decomposition.Lebesgue
 public import Mathlib.MeasureTheory.Function.LpSeminorm.LpNorm
-public import Mathlib.MeasureTheory.Function.LpSpace.Basic
+public import Mathlib.MeasureTheory.Measure.Decomposition.IntegralRNDeriv
+
 
 /-!
 # Quadratic mean differentiability
@@ -213,10 +211,10 @@ theorem integral_score_eq_zero {Ω E : Type*} {mΩ : MeasurableSpace Ω} [AddCom
           p.1⁻¹ * (∫ ω, 2⁻¹ * p.1 * A h ω * sqrt ((P θ).rnDeriv μ ω).toReal *
           (sqrt ((P (θ + p.1 • p.2)).rnDeriv μ ω).toReal +
           sqrt ((P θ).rnDeriv μ ω).toReal) ∂μ) := by
+        have : IsProbabilityMeasure (P θ) := hprob _ hθ
         simp only [map_smul, add_right_inj, mul_eq_mul_left_iff, inv_eq_zero,
           fun ω => (mul_comm (sqrt ((P θ).rnDeriv μ ω).toReal) (2⁻¹ * (p.1 • A h) ω)).symm,
-          fun ω => (mul_comm (sqrt ((P θ).rnDeriv μ ω).toReal) (2⁻¹ * p.1 * (A h ω))).symm,
-          MeasureTheory.integral_toReal_rnDeriv_mul (hs _ hθ)]
+          fun ω => (mul_comm (sqrt ((P θ).rnDeriv μ ω).toReal) (2⁻¹ * p.1 * (A h ω))).symm]
         refine Or.inl (integral_congr_ae ?_)
         have := Lp.coeFn_smul p.1 (A h)
         filter_upwards with ω
