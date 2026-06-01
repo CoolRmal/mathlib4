@@ -223,14 +223,12 @@ private lemma Lp.lpNorm_mul_sqrt_rnDeriv_of_ae_eq {Ω : Type*} {mΩ : Measurable
 private lemma lpNorm_score_eq_norm {Ω E : Type*} {mΩ : MeasurableSpace Ω} [SeminormedAddCommGroup E]
     [NormedSpace ℝ E] {P : E → Measure Ω} {μ : Measure Ω} [SigmaFinite μ] {θ : E}
     [IsProbabilityMeasure (P θ)] (hsθ : P θ ≪ μ) (A : E →ₗ[ℝ] (Ω →₂[P θ] ℝ)) (v : E) :
-    lpNorm (fun ω => 2⁻¹ * A v ω * √((P θ).rnDeriv μ ω).toReal) 2 μ = ‖(2⁻¹ : ℝ) • A v‖ := by
-  calc
-    lpNorm (fun ω => 2⁻¹ * A v ω * √((P θ).rnDeriv μ ω).toReal) 2 μ =
-        lpNorm ((2⁻¹ : ℝ) • A v) 2 (P θ) := by
-      refine Lp.lpNorm_mul_sqrt_rnDeriv_of_ae_eq hsθ ((2⁻¹ : ℝ) • A v) ?_
-      simpa using (Lp.coeFn_smul (2⁻¹ : ℝ) (A v)).symm
-    _ = ‖(2⁻¹ : ℝ) • A v‖ := by
-      rw [← toReal_eLpNorm (Lp.memLp ((2⁻¹ : ℝ) • A v)).aestronglyMeasurable, ← Lp.norm_def]
+    lpNorm (fun ω => 2⁻¹ * A v ω * √((P θ).rnDeriv μ ω).toReal) 2 μ = ‖(2⁻¹ : ℝ) • A v‖ := calc
+  _ = lpNorm ((2⁻¹ : ℝ) • A v) 2 (P θ) := by
+    refine Lp.lpNorm_mul_sqrt_rnDeriv_of_ae_eq hsθ ((2⁻¹ : ℝ) • A v) ?_
+    simpa using (Lp.coeFn_smul (2⁻¹ : ℝ) (A v)).symm
+  _ = ‖(2⁻¹ : ℝ) • A v‖ := by
+    rw [← toReal_eLpNorm (Lp.memLp ((2⁻¹ : ℝ) • A v)).aestronglyMeasurable, ← Lp.norm_def]
 
 /-- After dividing by the scalar used in a local path, the transported score term is bounded by the
 unscaled score term. -/
@@ -293,17 +291,11 @@ theorem hasHadamardQuadraticMeanDerivWithinAt_iff {Ω E : Type*}
         congr 1
         apply lpNorm_congr_ae
         have hscore_ae : (fun ω => (p.1 • A (p.2 - h + h)) ω) =ᵐ[P θ]
-            fun ω => (p.1 • A h) ω + (p.1 • A (p.2 - h)) ω := by
-          have hlin : p.1 • A (p.2 - h + h) = p.1 • A h + p.1 • A (p.2 - h) := by
-            rw [map_add]
-            simp [sub_eq_add_neg, smul_add, add_comm]
-          rw [hlin]
-          exact Lp.coeFn_add _ _
+            fun ω => (p.1 • A h) ω + (p.1 • A (p.2 - h)) ω := by sorry
         filter_upwards [Measure.rnDeriv_eq_zero_of_ae_eq (hs _ hθ) hscore_ae] with ω hω
-        by_cases hne : (p.1 • A (p.2 - h + h)) ω ≠ (p.1 • A h) ω + (p.1 • A (p.2 - h)) ω
+        by_cases! hne : (p.1 • A (p.2 - h + h)) ω ≠ (p.1 • A h) ω + (p.1 • A (p.2 - h)) ω
         · simp [hω hne]
-        · rw [not_ne_iff.1 hne]
-          ring
+        · rw [hne]; ring
       _ ≤ |p.1|⁻¹ * (lpNorm (fun ω => √((P (θ + p.1 • p.2)).rnDeriv μ ω).toReal -
             √((P θ).rnDeriv μ ω).toReal -
             2⁻¹ * (p.1 • A h) ω * √((P θ).rnDeriv μ ω).toReal) 2 μ +
@@ -324,10 +316,8 @@ theorem hasHadamardQuadraticMeanDerivWithinAt_iff {Ω E : Type*}
           √((P θ).rnDeriv μ ω).toReal -
           2⁻¹ * (p.1 • A h) ω * √((P θ).rnDeriv μ ω).toReal) 2 μ
           = |p.1|⁻¹ * lpNorm (fun ω => √((P (θ + p.1 • p.2)).rnDeriv μ ω).toReal -
-            √((P θ).rnDeriv μ ω).toReal -
-            2⁻¹ * (p.1 • A (p.2 - (p.2 - h))) ω *
-              √((P θ).rnDeriv μ ω).toReal) 2 μ := by
-        simp
+            √((P θ).rnDeriv μ ω).toReal - 2⁻¹ * (p.1 • A (p.2 - (p.2 - h))) ω *
+            √((P θ).rnDeriv μ ω).toReal) 2 μ := by simp
       _ = |p.1|⁻¹ * lpNorm (fun ω => √((P (θ + p.1 • p.2)).rnDeriv μ ω).toReal -
             √((P θ).rnDeriv μ ω).toReal -
             2⁻¹ * (p.1 • A p.2) ω * √((P θ).rnDeriv μ ω).toReal +
@@ -335,36 +325,21 @@ theorem hasHadamardQuadraticMeanDerivWithinAt_iff {Ω E : Type*}
         congr 1
         apply lpNorm_congr_ae
         have hscore_ae : (fun ω => (p.1 • A (p.2 - (p.2 - h))) ω) =ᵐ[P θ]
-            fun ω => (p.1 • A p.2) ω - (p.1 • A (p.2 - h)) ω := by
-          have hlin : p.1 • A (p.2 - (p.2 - h)) = p.1 • A p.2 - p.1 • A (p.2 - h) := by
-            rw [map_sub]
-            simp [smul_sub]
-          rw [hlin]
-          exact Lp.coeFn_sub _ _
+            fun ω => (p.1 • A p.2) ω - (p.1 • A (p.2 - h)) ω := by sorry
         filter_upwards [Measure.rnDeriv_eq_zero_of_ae_eq (hs _ hθ) hscore_ae] with ω hω
-        by_cases hne : (p.1 • A (p.2 - (p.2 - h))) ω ≠
-            (p.1 • A p.2) ω - (p.1 • A (p.2 - h)) ω
+        by_cases! hne : (p.1 • A (p.2 - (p.2 - h))) ω ≠ (p.1 • A p.2) ω - (p.1 • A (p.2 - h)) ω
         · simp [hω hne]
-        · rw [not_ne_iff.1 hne]
-          ring
+        · rw [hne]; ring
       _ ≤ |p.1|⁻¹ * (lpNorm (fun ω => √((P (θ + p.1 • p.2)).rnDeriv μ ω).toReal -
             √((P θ).rnDeriv μ ω).toReal -
             2⁻¹ * (p.1 • A p.2) ω * √((P θ).rnDeriv μ ω).toReal) 2 μ +
-            lpNorm (fun ω => 2⁻¹ * (p.1 • A (p.2 - h)) ω *
-              √((P θ).rnDeriv μ ω).toReal) 2 μ) := by
+            lpNorm (fun ω => 2⁻¹ * (p.1 • A (p.2 - h)) ω * √((P θ).rnDeriv μ ω).toReal) 2 μ) := by
         gcongr
-        have hD : MemLp (fun ω => 2⁻¹ * (p.1 • A (p.2 - h)) ω *
-            √((P θ).rnDeriv μ ω).toReal) 2 μ := by
-          simpa [map_smul, Pi.smul_apply, smul_eq_mul, mul_assoc] using
-            (Lp.memLp_mul_sqrt_rnDeriv (hs _ hθ) (A (p.1 • (p.2 - h)))).const_mul 2⁻¹
-        exact lpNorm_add_le' hD (by norm_num : (1 : ℝ≥0∞) ≤ 2)
-      _ = |p.1|⁻¹ * lpNorm (fun ω => √((P (θ + p.1 • p.2)).rnDeriv μ ω).toReal -
-            √((P θ).rnDeriv μ ω).toReal -
-            2⁻¹ * (p.1 • A p.2) ω * √((P θ).rnDeriv μ ω).toReal) 2 μ +
-            |p.1|⁻¹ * lpNorm (fun ω => 2⁻¹ * (p.1 • A (p.2 - h)) ω *
-              √((P θ).rnDeriv μ ω).toReal) 2 μ := by
-        rw [mul_add]
+        refine lpNorm_add_le ?_ (by norm_num)
+        refine ((memLp_sqrt_rnDeriv (P (θ + p.1 • p.2)) μ).sub (memLp_sqrt_rnDeriv (P θ) μ)).sub ?_
+        simpa [mul_assoc] using (Lp.memLp_mul_sqrt_rnDeriv (hs _ hθ) (A (p.1 • p.2))).const_mul 2⁻¹
       _ ≤ _ := by
+        simp only [mul_add]
         sorry
 
 /-- A quadratic-mean derivative within a set is a Hadamard QMD derivative. -/
