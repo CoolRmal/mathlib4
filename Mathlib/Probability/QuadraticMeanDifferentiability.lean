@@ -39,8 +39,7 @@ Develop a fuller API for `HasQuadraticMeanDerivWithinAt`, analogous to the APIs 
 
 * add convenient variants, such as QMD-at and QMD-on predicates;
 * add uniqueness and congruence lemmas for QMD derivatives under appropriate hypotheses;
-* define and develop a canonical derivative object, analogous to `fderivWithin`, when uniqueness
-  hypotheses are available.
+* define and develop a canonical derivative object, analogous to `fderivWithin`.
 
 -/
 
@@ -57,7 +56,7 @@ namespace QMD
 section Definitions
 
 /-- Quadratic mean differentiability within a set.  The `L²(μ)` remainder is `o(y - x)` as
-`y → x` within `s`. -/
+`y → x` within `s`. We do not assume that the derivative is continuous. -/
 def HasQuadraticMeanDerivWithinAt {Ω E : Type*} {mΩ : MeasurableSpace Ω} [AddCommGroup E]
     [Module ℝ E] [TopologicalSpace E] (P : E → Measure Ω) (μ : Measure Ω) (s : Set E) (x : E)
     (A : E →ₗ[ℝ] (Ω →₂[P x] ℝ)) : Prop :=
@@ -67,7 +66,7 @@ def HasQuadraticMeanDerivWithinAt {Ω E : Type*} {mΩ : MeasurableSpace Ω} [Add
 
 /-- Hadamard-style quadratic mean differentiability within a set. Along every path `θ + t • a` with
 `t → 0`, `a → h`, and eventually staying in `s`, the `L²(μ)` remainder with direction `h` tends to
-zero. -/
+zero. We do not assume that the derivative is continuous. -/
 def HasHadamardQuadraticMeanDerivWithinAt {Ω E : Type*} {mΩ : MeasurableSpace Ω} [AddCommMonoid E]
     [Module ℝ E] [TopologicalSpace E] (P : E → Measure Ω) (μ : Measure Ω) (s : Set E) (θ : E)
     (A : E →ₗ[ℝ] (Ω →₂[P θ] ℝ)) : Prop :=
@@ -235,7 +234,7 @@ unscaled score term. -/
 private lemma abs_inv_mul_lpNorm_score_smul_le {Ω E : Type*} {mΩ : MeasurableSpace Ω}
     [SeminormedAddCommGroup E] [NormedSpace ℝ E] {P : E → Measure Ω} {μ : Measure Ω}
     [SigmaFinite μ] {θ : E} [IsProbabilityMeasure (P θ)] (hsθ : P θ ≪ μ)
-    (A : E →L[ℝ] (Ω →₂[P θ] ℝ)) (t : ℝ) (v : E) :
+    (A : E →ₗ[ℝ] (Ω →₂[P θ] ℝ)) (t : ℝ) (v : E) :
     |t|⁻¹ * lpNorm (fun ω => 2⁻¹ * (t • A v) ω * √((P θ).rnDeriv μ ω).toReal) 2 μ =
       lpNorm (fun ω => 2⁻¹ * A v ω * √((P θ).rnDeriv μ ω).toReal) 2 μ := by
   sorry
@@ -291,7 +290,9 @@ theorem hasHadamardQuadraticMeanDerivWithinAt_iff {Ω E : Type*}
         congr 1
         apply lpNorm_congr_ae
         have hscore_ae : (fun ω => (p.1 • A (p.2 - h + h)) ω) =ᵐ[P θ]
-          fun ω => (p.1 • A h) ω + (p.1 • A (p.2 - h)) ω := by sorry
+            fun ω => (p.1 • A h) ω + (p.1 • A (p.2 - h)) ω := by
+          filter_upwards [Lp.coeFn_add (p.1 • A h) (p.1 • A (p.2 - h))] with ω hω
+          rw [add_comm, map_add, smul_add, hω, Pi.add_apply]
         filter_upwards [Measure.rnDeriv_eq_zero_of_ae_eq (hs _ hθ) hscore_ae] with ω hω
         by_cases! hne : (p.1 • A (p.2 - h + h)) ω ≠ (p.1 • A h) ω + (p.1 • A (p.2 - h)) ω
         · simp [hω hne]
@@ -326,7 +327,9 @@ theorem hasHadamardQuadraticMeanDerivWithinAt_iff {Ω E : Type*}
         congr 1
         apply lpNorm_congr_ae
         have hscore_ae : (fun ω => (p.1 • A (p.2 - (p.2 - h))) ω) =ᵐ[P θ]
-          fun ω => (p.1 • A p.2) ω - (p.1 • A (p.2 - h)) ω := by sorry
+          fun ω => (p.1 • A p.2) ω - (p.1 • A (p.2 - h)) ω := by
+          filter_upwards [Lp.coeFn_sub (p.1 • A p.2) (p.1 • A (p.2 - h))] with ω hω
+          rw [map_sub, smul_sub, hω, Pi.sub_apply]
         filter_upwards [Measure.rnDeriv_eq_zero_of_ae_eq (hs _ hθ) hscore_ae] with ω hω
         by_cases! hne : (p.1 • A (p.2 - (p.2 - h))) ω ≠ (p.1 • A p.2) ω - (p.1 • A (p.2 - h)) ω
         · simp [hω hne]
