@@ -232,11 +232,11 @@ private lemma lpNorm_score_eq_norm {Ω E : Type*} {mΩ : MeasurableSpace Ω} [Se
 
 /-- After dividing by the scalar used in a local path, the transported score term is bounded by the
 unscaled score term. -/
-private lemma norm_inv_mul_lpNorm_score_smul_le {Ω E : Type*} {mΩ : MeasurableSpace Ω}
+private lemma abs_inv_mul_lpNorm_score_smul_le {Ω E : Type*} {mΩ : MeasurableSpace Ω}
     [SeminormedAddCommGroup E] [NormedSpace ℝ E] {P : E → Measure Ω} {μ : Measure Ω}
     [SigmaFinite μ] {θ : E} [IsProbabilityMeasure (P θ)] (hsθ : P θ ≪ μ)
     (A : E →L[ℝ] (Ω →₂[P θ] ℝ)) (t : ℝ) (v : E) :
-    |t⁻¹| * lpNorm (fun ω => 2⁻¹ * A (t • v) ω * √((P θ).rnDeriv μ ω).toReal) 2 μ =
+    |t|⁻¹ * lpNorm (fun ω => 2⁻¹ * (t • A v) ω * √((P θ).rnDeriv μ ω).toReal) 2 μ =
       lpNorm (fun ω => 2⁻¹ * A v ω * √((P θ).rnDeriv μ ω).toReal) 2 μ := by
   sorry
 
@@ -291,7 +291,7 @@ theorem hasHadamardQuadraticMeanDerivWithinAt_iff {Ω E : Type*}
         congr 1
         apply lpNorm_congr_ae
         have hscore_ae : (fun ω => (p.1 • A (p.2 - h + h)) ω) =ᵐ[P θ]
-            fun ω => (p.1 • A h) ω + (p.1 • A (p.2 - h)) ω := by sorry
+          fun ω => (p.1 • A h) ω + (p.1 • A (p.2 - h)) ω := by sorry
         filter_upwards [Measure.rnDeriv_eq_zero_of_ae_eq (hs _ hθ) hscore_ae] with ω hω
         by_cases! hne : (p.1 • A (p.2 - h + h)) ω ≠ (p.1 • A h) ω + (p.1 • A (p.2 - h)) ω
         · simp [hω hne]
@@ -305,8 +305,9 @@ theorem hasHadamardQuadraticMeanDerivWithinAt_iff {Ω E : Type*}
         refine ((memLp_sqrt_rnDeriv (P (θ + p.1 • p.2)) μ).sub (memLp_sqrt_rnDeriv (P θ) μ)).sub ?_
         simpa [mul_assoc] using (Lp.memLp_mul_sqrt_rnDeriv (hs _ hθ) (A (p.1 • h))).const_mul 2⁻¹
       _ = _ := by
-        simp only [mul_add, ← map_smul]
-        sorry
+        simp only [mul_add]
+        congr
+        exact abs_inv_mul_lpNorm_score_smul_le (hs _ hθ) A p.1 (p.2 - h)
   · filter_upwards [he] with p hp
     have : IsProbabilityMeasure (P (θ + p.1 • p.2)) := hprob _ hp
     have : IsProbabilityMeasure (P θ) := hprob _ hθ
@@ -325,7 +326,7 @@ theorem hasHadamardQuadraticMeanDerivWithinAt_iff {Ω E : Type*}
         congr 1
         apply lpNorm_congr_ae
         have hscore_ae : (fun ω => (p.1 • A (p.2 - (p.2 - h))) ω) =ᵐ[P θ]
-            fun ω => (p.1 • A p.2) ω - (p.1 • A (p.2 - h)) ω := by sorry
+          fun ω => (p.1 • A p.2) ω - (p.1 • A (p.2 - h)) ω := by sorry
         filter_upwards [Measure.rnDeriv_eq_zero_of_ae_eq (hs _ hθ) hscore_ae] with ω hω
         by_cases! hne : (p.1 • A (p.2 - (p.2 - h))) ω ≠ (p.1 • A p.2) ω - (p.1 • A (p.2 - h)) ω
         · simp [hω hne]
@@ -338,9 +339,10 @@ theorem hasHadamardQuadraticMeanDerivWithinAt_iff {Ω E : Type*}
         refine lpNorm_add_le ?_ (by norm_num)
         refine ((memLp_sqrt_rnDeriv (P (θ + p.1 • p.2)) μ).sub (memLp_sqrt_rnDeriv (P θ) μ)).sub ?_
         simpa [mul_assoc] using (Lp.memLp_mul_sqrt_rnDeriv (hs _ hθ) (A (p.1 • p.2))).const_mul 2⁻¹
-      _ ≤ _ := by
+      _ = _ := by
         simp only [mul_add]
-        sorry
+        congr
+        exact abs_inv_mul_lpNorm_score_smul_le (hs _ hθ) A p.1 (p.2 - h)
 
 /-- A quadratic-mean derivative within a set is a Hadamard QMD derivative. -/
 theorem HasQuadraticMeanDerivWithinAt.hasHadamardQuadraticMeanDerivWithinAt {Ω E : Type*}
