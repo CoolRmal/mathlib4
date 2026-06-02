@@ -229,15 +229,18 @@ private lemma lpNorm_score_eq_norm {Ω E : Type*} {mΩ : MeasurableSpace Ω} [Se
   _ = ‖(2⁻¹ : ℝ) • A v‖ := by
     rw [← toReal_eLpNorm (Lp.memLp ((2⁻¹ : ℝ) • A v)).aestronglyMeasurable, ← Lp.norm_def]
 
-/-- After dividing by the scalar used in a local path, the transported score term is bounded by the
-unscaled score term. -/
+/-- After dividing by the scalar used in a local path, the transported score term is bounded above
+by the unscaled score term. -/
 private lemma abs_inv_mul_lpNorm_score_smul_le {Ω E : Type*} {mΩ : MeasurableSpace Ω}
     [SeminormedAddCommGroup E] [NormedSpace ℝ E] {P : E → Measure Ω} {μ : Measure Ω}
     [SigmaFinite μ] {θ : E} [IsProbabilityMeasure (P θ)] (hsθ : P θ ≪ μ)
     (A : E →ₗ[ℝ] (Ω →₂[P θ] ℝ)) (t : ℝ) (v : E) :
-    |t|⁻¹ * lpNorm (fun ω => 2⁻¹ * (t • A v) ω * √((P θ).rnDeriv μ ω).toReal) 2 μ =
+    |t|⁻¹ * lpNorm (fun ω => 2⁻¹ * (t • A v) ω * √((P θ).rnDeriv μ ω).toReal) 2 μ ≤
       lpNorm (fun ω => 2⁻¹ * A v ω * √((P θ).rnDeriv μ ω).toReal) 2 μ := by
-  sorry
+  by_cases! ht : t = 0
+  · simp [ht]
+  · simp only [← map_smul, lpNorm_score_eq_norm hsθ]
+    sorry
 
 /-- The linear score part of the Hadamard QMD expansion is itself `o(1)` in `L²(μ)` along a local
 path. -/
@@ -305,10 +308,11 @@ theorem hasHadamardQuadraticMeanDerivWithinAt_iff {Ω E : Type*}
         refine lpNorm_sub_le ?_ (by norm_num)
         refine ((memLp_sqrt_rnDeriv (P (θ + p.1 • p.2)) μ).sub (memLp_sqrt_rnDeriv (P θ) μ)).sub ?_
         simpa [mul_assoc] using (Lp.memLp_mul_sqrt_rnDeriv (hs _ hθ) (A (p.1 • h))).const_mul 2⁻¹
-      _ = _ := by
+      _ ≤ _ := by
         simp only [mul_add]
-        congr
-        exact abs_inv_mul_lpNorm_score_smul_le (hs _ hθ) A p.1 (p.2 - h)
+        gcongr
+        · trivial
+        · exact abs_inv_mul_lpNorm_score_smul_le (hs _ hθ) A p.1 (p.2 - h)
   · filter_upwards [he] with p hp
     have : IsProbabilityMeasure (P (θ + p.1 • p.2)) := hprob _ hp
     have : IsProbabilityMeasure (P θ) := hprob _ hθ
@@ -342,9 +346,9 @@ theorem hasHadamardQuadraticMeanDerivWithinAt_iff {Ω E : Type*}
         refine lpNorm_add_le ?_ (by norm_num)
         refine ((memLp_sqrt_rnDeriv (P (θ + p.1 • p.2)) μ).sub (memLp_sqrt_rnDeriv (P θ) μ)).sub ?_
         simpa [mul_assoc] using (Lp.memLp_mul_sqrt_rnDeriv (hs _ hθ) (A (p.1 • p.2))).const_mul 2⁻¹
-      _ = _ := by
+      _ ≤ _ := by
         simp only [mul_add]
-        congr
+        gcongr
         exact abs_inv_mul_lpNorm_score_smul_le (hs _ hθ) A p.1 (p.2 - h)
 
 /-- A quadratic-mean derivative within a set is a Hadamard QMD derivative. -/
