@@ -239,8 +239,8 @@ private lemma abs_inv_mul_lpNorm_score_smul_le {Ω E : Type*} {mΩ : MeasurableS
       lpNorm (fun ω => 2⁻¹ * A v ω * √((P θ).rnDeriv μ ω).toReal) 2 μ := by
   by_cases! ht : t = 0
   · simp [ht]
-  · simp only [← map_smul, lpNorm_score_eq_norm hsθ]
-    sorry
+  · simp only [← map_smul, lpNorm_score_eq_norm hsθ, smul_comm (2⁻¹ : ℝ) t]
+    simp [norm_smul, field]
 
 /-- The linear score part of the Hadamard QMD expansion is itself `o(1)` in `L²(μ)` along a local
 path. -/
@@ -359,7 +359,7 @@ theorem HasQuadraticMeanDerivWithinAt.hasHadamardQuadraticMeanDerivWithinAt {Ω 
     (hprob : ∀ x ∈ s, IsProbabilityMeasure (P x)) (hs : ∀ x ∈ s, P x ≪ μ) :
     HasHadamardQuadraticMeanDerivWithinAt P μ s θ A :=
   (hasHadamardQuadraticMeanDerivWithinAt_iff A hθ hprob hs).2
-    fun _h _l hzero hh he => hA.tendsto_local_path_remainder hzero hh he
+    fun _ _ hzero hh he => hA.tendsto_local_path_remainder hzero hh he
 
 end Definitions
 
