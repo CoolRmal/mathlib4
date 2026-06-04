@@ -6290,6 +6290,8 @@ public import Mathlib.Probability.Moments.MGFAnalytic
 public import Mathlib.Probability.Moments.SubGaussian
 public import Mathlib.Probability.Moments.Tilted
 public import Mathlib.Probability.Moments.Variance
+public import Mathlib.Probability.Noncommutative.Basic
+public import Mathlib.Probability.Noncommutative.Semicircular
 public import Mathlib.Probability.Notation
 public import Mathlib.Probability.ProbabilityMassFunction.Basic
 public import Mathlib.Probability.ProbabilityMassFunction.Binomial
