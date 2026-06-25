@@ -1231,23 +1231,24 @@ lemma integrable_prod {f : α → E × F} :
 
 section Limit
 
+variable {ι Ω : Type*} {l : Filter ι} [IsCountablyGenerated l] [NeBot l] [MeasurableSpace Ω]
+
 /-- If `G n` tends to `f` a.e. and each `‖G n ·‖ₑ` is `AEMeasurable`, then the lower Lebesgue
 integral of `‖f ·‖ₑ` is at most the liminf of the lower Lebesgue integral of `‖G n ·‖ₑ`. -/
-theorem lintegral_enorm_le_liminf_of_tendsto
-    {G : ℕ → ℝ → ℝ} {f : ℝ → ℝ} {μ : Measure ℝ}
-    (hGf : ∀ᵐ x ∂μ, Tendsto (fun (n : ℕ) ↦ G n x) atTop (𝓝 (f x)))
-    (hG : ∀ (n : ℕ), AEMeasurable (fun x ↦ ‖G n x‖ₑ) μ) :
-    ∫⁻ x, ‖f x‖ₑ ∂μ ≤ liminf (fun n ↦ ∫⁻ x, ‖G n x‖ₑ ∂μ) atTop :=
+theorem lintegral_enorm_le_liminf_of_tendsto {G : ι → Ω → ε} {f : Ω → ε} {μ : Measure Ω}
+    (hGf : ∀ᵐ x ∂μ, Tendsto (fun i ↦ G i x) l (𝓝 (f x)))
+    (hG : ∀ i, AEMeasurable (fun x ↦ ‖G i x‖ₑ) μ) :
+    ∫⁻ x, ‖f x‖ₑ ∂μ ≤ liminf (fun n ↦ ∫⁻ x, ‖G n x‖ₑ ∂μ) l :=
   lintegral_congr_ae (by filter_upwards [hGf] with x hx using hx.enorm.liminf_eq) ▸
     (MeasureTheory.lintegral_liminf_le' hG)
 
 /-- If `G n` tends to `f` a.e., each `G n` is `AEStronglyMeasurable` and the liminf of the lower
 Lebesgue integral of `‖G n ·‖ₑ` is finite, then `f` is Lebesgue integrable. -/
-theorem integrable_of_tendsto
-    {G : ℕ → ℝ → ℝ} {f : ℝ → ℝ} {μ : Measure ℝ}
-    (hGf : ∀ᵐ x ∂μ, Tendsto (fun (n : ℕ) ↦ G n x) atTop (𝓝 (f x)))
-    (hG : ∀ (n : ℕ), AEStronglyMeasurable (G n) μ)
-    (hG' : liminf (fun n ↦ ∫⁻ x, ‖G n x‖ₑ ∂μ) atTop ≠ ⊤) :
+theorem integrable_of_tendsto [MeasurableSpace ε] [PseudoMetrizableSpace ε] [BorelSpace ε]
+    {G : ι → Ω → ε} {f : Ω → ε} {μ : Measure Ω}
+    (hGf : ∀ᵐ x ∂μ, Tendsto (fun i ↦ G i x) l (𝓝 (f x)))
+    (hG : ∀ i, AEStronglyMeasurable (G i) μ)
+    (hG' : liminf (fun n ↦ ∫⁻ x, ‖G n x‖ₑ ∂μ) l ≠ ⊤) :
     Integrable f μ :=
   ⟨aestronglyMeasurable_of_tendsto_ae _ hG hGf,
    lt_of_le_of_lt (lintegral_enorm_le_liminf_of_tendsto hGf
